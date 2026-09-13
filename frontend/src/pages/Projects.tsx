@@ -100,10 +100,15 @@ export default function Projects() {
       
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project, idx) => (
-          <div key={`${project.project_id}-${idx}`} onClick={() => window.open(`/projects/${project.project_id}`, '_blank')} className="group bg-white rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-slate-100 flex flex-col hover:-translate-y-2">
+          <div key={`${project.project_id}-${idx}`} onClick={() => window.open(`/projects/${project.project_id}`, '_blank')} className={`relative group bg-white rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border ${stats?.wrongCountProjectIds?.includes(project.project_id) ? 'border-yellow-400 opacity-90' : 'border-slate-100'} flex flex-col hover:-translate-y-2`}>
+            {stats?.wrongCountProjectIds?.includes(project.project_id) && (
+              <div className="absolute top-0 right-0 bg-yellow-500 text-white px-4 py-1 rounded-bl-xl font-bold text-xs uppercase shadow-md z-20 tracking-widest">
+                Wrong Listing Count
+              </div>
+            )}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
             
-            <div className="p-8 flex-1 flex flex-col relative z-10">
+            <div className="p-8 flex-1 flex flex-col relative z-10 pt-10">
               <div className="flex justify-between items-start mb-6">
                 <div className="inline-flex items-center justify-center px-4 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black tracking-widest uppercase shadow-sm border border-indigo-200">
                   {project.project_id}

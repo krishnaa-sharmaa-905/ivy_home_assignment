@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, cleanListing, isValidListing } from '../api';
+import { api, cleanListing } from '../api';
 import { Link } from 'react-router-dom';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
@@ -38,7 +38,7 @@ export default function Rentals() {
       const res = await api.get('/v1/rentals', { params });
       const rawResults = res.data.results || [];
       
-      let valid = rawResults.map(cleanListing).filter(isValidListing);
+      let valid = rawResults.map(cleanListing).filter((l: any) => l.is_live);
 
       setRentals(valid);
 
@@ -187,8 +187,18 @@ export default function Rentals() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {rentals.map((rental, idx) => (
-          <Link key={`${rental.listing_id}-${idx}`} to={`/listings/${rental.listing_id}`} target="_blank" rel="noopener noreferrer" className="group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden block border border-slate-100 flex flex-col hover:-translate-y-1">
-            <div className="p-6 flex-1 flex flex-col justify-between">
+          <Link key={`${rental.listing_id}-${idx}`} to={`/listings/${rental.listing_id}`} target="_blank" rel="noopener noreferrer" className={`relative group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden block border ${stats?.corruptIds?.includes(rental.listing_id) ? 'border-red-400 opacity-80' : stats?.fakeIds?.includes(rental.listing_id) ? 'border-orange-400 opacity-80' : 'border-slate-100'} flex flex-col hover:-translate-y-1`}>
+            {stats?.corruptIds?.includes(rental.listing_id) && (
+              <div className="absolute top-0 right-0 bg-red-500 text-white px-4 py-1 rounded-bl-xl font-bold text-xs uppercase shadow-md z-10 tracking-widest">
+                Corrupted Data
+              </div>
+            )}
+            {!stats?.corruptIds?.includes(rental.listing_id) && stats?.fakeIds?.includes(rental.listing_id) && (
+              <div className="absolute top-0 right-0 bg-orange-500 text-white px-4 py-1 rounded-bl-xl font-bold text-xs uppercase shadow-md z-10 tracking-widest">
+                Fake Listing
+              </div>
+            )}
+            <div className="p-6 flex-1 flex flex-col justify-between pt-8">
               <div>
                 <div className="flex justify-between items-start gap-4 mb-4">
                   <div className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold tracking-wider uppercase">

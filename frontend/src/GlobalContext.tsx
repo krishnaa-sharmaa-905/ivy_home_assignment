@@ -50,7 +50,21 @@ function computeStats(rawListings: any[], rawRentals: any[], rawProjects: any[])
   const activeListings = listings.filter((l: any) => l.is_live === true).length;
 
   const corruptIds = listings.filter(isCorrupt).map((l: any) => l.listing_id);
-  const fakeIds    = listings.filter(isFake).map((l: any) => l.listing_id);
+  
+  const brokerPhones: Record<string, Set<string>> = {};
+  for (const l of listings) {
+    if (l.posted_by_name && l.posted_by_contact) {
+      if (!brokerPhones[l.posted_by_name]) brokerPhones[l.posted_by_name] = new Set();
+      brokerPhones[l.posted_by_name].add(l.posted_by_contact);
+    }
+  }
+
+  const fakeIds = listings.filter((l: any) => {
+    if (isFake(l)) return true;
+    if (l.posted_by_name && brokerPhones[l.posted_by_name] && brokerPhones[l.posted_by_name].size > 1) return true;
+    return false;
+  }).map((l: any) => l.listing_id);
+
   const excludeSet = new Set([...corruptIds, ...fakeIds]);
 
   const totalMonthlyRent = rawRentals.reduce((s: number, r: any) => s + (r.price || 0), 0);
@@ -78,9 +92,9 @@ function computeStats(rawListings: any[], rawRentals: any[], rawProjects: any[])
   listings.forEach((l: any) => {
     if (l.project_id) projectCounts[l.project_id] = (projectCounts[l.project_id] || 0) + 1;
   });
-  const wrongCountProjects = projects.filter(
+  const wrongCountProjectIds = projects.filter(
     (p: any) => (projectCounts[p.project_id] || 0) !== p.total_listings
-  ).length;
+  ).map((p: any) => p.project_id);
 
   return {
     totalListingRecords,
@@ -92,9 +106,12 @@ function computeStats(rawListings: any[], rawRentals: any[], rawProjects: any[])
     avgPricePerSqft2bhk,
     costliestProject,
     listingsLast7Days,
-    wrongCountProjects,
+    wrongCountProjects: wrongCountProjectIds.length,
+    wrongCountProjectIds,
     totalRentals: rawRentals.length,
     totalProjects: projects.length,
+    corruptIds,
+    fakeIds,
   };
 }
 
