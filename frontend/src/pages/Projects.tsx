@@ -1,59 +1,47 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api, cleanProject } from '../api';
 
 export default function Projects() {
-  const navigate = useNavigate();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 50;
 
   const [localityFilter, setLocalityFilter] = useState('');
 
-  const loadProjects = async (reset = false) => {
-    if (!reset && loading) return;
+  const loadProjects = async () => {
     setLoading(true);
-    let currentOffset = reset ? 0 : offset;
+    const currentOffset = (page - 1) * limit;
+    
     try {
-      let combined = reset ? [] : [...projects];
-      let hasMoreData = true;
-      let loadedInThisBatch = 0;
-      let fetchCount = 0;
+      const params: any = { offset: currentOffset, limit };
+      if (localityFilter) params.locality = localityFilter.toLowerCase().trim();
+      
+      const res = await api.get('/v1/projects', { params });
+      const rawResults = res.data.results || [];
+      const valid = rawResults.map(cleanProject);
 
-      while (loadedInThisBatch < 10 && hasMoreData && fetchCount < 5) {
-        fetchCount++;
-        const params: any = { offset: currentOffset, limit: 50 };
-        
-        const res = await api.get('/v1/projects', { params });
-        const rawResults = res.data.results || [];
-        currentOffset += rawResults.length;
-        hasMoreData = rawResults.length > 0 && currentOffset < res.data.total;
-        
-        let valid = rawResults.map(cleanProject);
-        if (localityFilter) valid = valid.filter((p: any) => p.locality.toLowerCase().includes(localityFilter.toLowerCase()));
-
-        combined = [...combined, ...valid];
-        loadedInThisBatch += valid.length;
-      }
-
-      setProjects(combined);
-      setOffset(currentOffset);
-      setHasMore(hasMoreData);
+      setProjects(valid);
+      setTotal(res.data.total || 0);
     } catch (err) {
       console.error(err);
-      if (reset) setProjects([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      loadProjects(true);
-    }, 400);
-    return () => clearTimeout(handler);
-  }, [localityFilter]);
+    loadProjects();
+  }, [page]);
+
+  const handleSearch = () => {
+    if (page !== 1) {
+      setPage(1);
+    } else {
+      loadProjects();
+    }
+  };
 
   const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
@@ -65,19 +53,28 @@ export default function Projects() {
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Projects</h2>
             <p className="mt-2 text-slate-500">Explore large scale real estate developments.</p>
           </div>
-          <div className="flex flex-wrap gap-4 w-full md:w-auto">
+          <div className="flex flex-wrap gap-4 w-full md:w-auto items-end">
             <div className="w-full md:w-auto">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Locality</label>
               <input type="text" className="block w-full min-w-[250px] rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
-                     value={localityFilter} onChange={e => setLocalityFilter(e.target.value)} placeholder="Search by locality..." />
+                     value={localityFilter} onChange={e => setLocalityFilter(e.target.value)} placeholder="Exact locality..." />
+            </div>
+            <div>
+              <button 
+                onClick={handleSearch}
+                disabled={loading}
+                className="w-full md:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md shadow-indigo-200 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {loading ? 'Searching...' : 'Search'}
+              </button>
             </div>
           </div>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project, idx) => (
-          <div key={`${project.project_id}-${idx}`} onClick={() => navigate(`/projects/${project.project_id}`)} className="cursor-pointer group relative bg-white rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 flex flex-col hover:-translate-y-2">
+          <div key={`${project.project_id}-${idx}`} onClick={() => window.open(`/projects/${project.project_id}`, '_blank')} className="group bg-white rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden cursor-pointer border border-slate-100 flex flex-col hover:-translate-y-2">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
             
             <div className="p-8 flex-1 flex flex-col relative z-10">
@@ -127,20 +124,30 @@ export default function Projects() {
         ))}
       </div>
       
-      {hasMore && (
-        <div className="text-center mt-12 pb-12">
-          <button 
-            onClick={() => loadProjects()} 
-            disabled={loading}
-            className="px-8 py-3 border border-transparent text-sm font-bold rounded-full text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 disabled:opacity-50 transition-all hover:scale-105 active:scale-95"
+      <div className="flex justify-between items-center mt-12 pb-12">
+        <p className="text-sm text-slate-500 font-medium">
+          Showing <span className="font-bold text-slate-900">{projects.length > 0 ? (page - 1) * limit + 1 : 0}</span> to <span className="font-bold text-slate-900">{Math.min(page * limit, total)}</span> of <span className="font-bold text-slate-900">{total}</span> projects
+        </p>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1 || loading}
+            className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Loading...' : 'Load More Projects'}
+            Previous
+          </button>
+          <span className="px-4 py-2 flex items-center text-sm font-medium text-slate-900 bg-slate-100 rounded-lg">
+            Page {page} of {Math.max(1, Math.ceil(total / limit))}
+          </span>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            disabled={page >= Math.ceil(total / limit) || loading}
+            className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          >
+            Next
           </button>
         </div>
-      )}
-      {!hasMore && projects.length > 0 && (
-        <p className="text-center text-slate-500 mt-12 pb-12 font-medium">You've reached the end of the projects.</p>
-      )}
+      </div>
     </div>
   );
 }

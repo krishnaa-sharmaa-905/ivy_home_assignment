@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { Home } from 'lucide-react';
+import { api } from './api';
 import Login from './pages/Login';
 import Browse from './pages/Browse';
 import ListingDetail from './pages/ListingDetail';
@@ -26,6 +27,19 @@ const ProtectedRoute = ({ children }: { children: any }) => {
 };
 
 const Layout = ({ children }: { children: any }) => {
+  const handleLogout = async () => {
+    try {
+      // Tell server to invalidate the token — fire-and-forget (never block logout on failure)
+      await api.post('/auth/logout');
+    } catch {
+      // Ignore — always clear local session regardless
+    } finally {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      window.location.href = '/login';
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 font-sans text-slate-900">
       <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 transition-all">
@@ -47,12 +61,8 @@ const Layout = ({ children }: { children: any }) => {
               </div>
             </div>
             <div className="flex items-center">
-              <button 
-                onClick={() => {
-                  localStorage.removeItem('access_token');
-                  localStorage.removeItem('refresh_token');
-                  window.location.href = '/login';
-                }}
+              <button
+                onClick={handleLogout}
                 className="text-sm font-semibold text-slate-500 hover:text-slate-900 px-4 py-2 rounded-full hover:bg-slate-100 transition-all"
               >
                 Logout

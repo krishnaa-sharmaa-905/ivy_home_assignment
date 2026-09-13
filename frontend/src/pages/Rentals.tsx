@@ -69,15 +69,16 @@ export default function Rentals() {
   };
 
   useEffect(() => {
-    setPage(1);
-  }, [localityFilter, priceRange, sortBy, order]);
+    loadRentals();
+  }, [page]);
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
+  const handleSearch = () => {
+    if (page !== 1) {
+      setPage(1);
+    } else {
       loadRentals();
-    }, 400);
-    return () => clearTimeout(handler);
-  }, [page, localityFilter, priceRange, sortBy, order]);
+    }
+  };
 
   const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
@@ -115,6 +116,16 @@ export default function Rentals() {
                 <option value="desc">Descending</option>
               </select>
             </div>
+
+            <div className="flex-1 flex items-end">
+              <button 
+                onClick={handleSearch}
+                disabled={loading}
+                className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md shadow-indigo-200 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {loading ? 'Searching...' : 'Search'}
+              </button>
+            </div>
           </div>
         </div>
         <div className="mt-6 pt-6 border-t border-slate-200/60">
@@ -143,7 +154,7 @@ export default function Rentals() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {rentals.map((rental, idx) => (
-          <Link key={`${rental.listing_id}-${idx}`} to={`/listings/${rental.listing_id}`} className="group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden block border border-slate-100 flex flex-col hover:-translate-y-1">
+          <Link key={`${rental.listing_id}-${idx}`} to={`/listings/${rental.listing_id}`} target="_blank" rel="noopener noreferrer" className="group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden block border border-slate-100 flex flex-col hover:-translate-y-1">
             <div className="p-6 flex-1 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start gap-4 mb-4">
