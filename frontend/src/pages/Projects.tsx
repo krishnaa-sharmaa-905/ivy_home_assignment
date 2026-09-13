@@ -82,35 +82,50 @@ export default function Projects() {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
         {projects.map((project, idx) => (
-          <div key={`${project.project_id}-${idx}`} className="group bg-white rounded-3xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-slate-100 flex flex-col hover:-translate-y-1">
-            <div className="p-6 flex-1 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start gap-4 mb-4">
-                  <div className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold tracking-wider uppercase">
-                    {project.project_id}
-                  </div>
-                  <div className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs font-bold tracking-wider uppercase">
-                    RERA: {project.rera_number || 'N/A'}
-                  </div>
+          <div key={`${project.project_id}-${idx}`} className="group relative bg-white rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 flex flex-col hover:-translate-y-2">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+            
+            <div className="p-8 flex-1 flex flex-col relative z-10">
+              <div className="flex justify-between items-start mb-6">
+                <div className="inline-flex items-center justify-center px-4 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black tracking-widest uppercase shadow-sm border border-indigo-200">
+                  {project.project_id}
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 leading-tight mb-2 group-hover:text-indigo-600 transition-colors">
+                {project.rera_number && (
+                  <div className="inline-flex items-center justify-center px-4 py-1.5 bg-purple-50 text-purple-700 rounded-full text-xs font-bold tracking-wider uppercase border border-purple-100">
+                    RERA: {project.rera_number}
+                  </div>
+                )}
+              </div>
+              
+              <div className="mb-8">
+                <h3 className="text-2xl font-extrabold text-slate-900 leading-tight mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2">
                   {project.name}
                 </h3>
-                <p className="text-sm text-slate-500 capitalize flex items-center">
-                  <span className="w-2 h-2 rounded-full bg-slate-300 mr-2"></span>
+                <p className="text-base text-slate-500 capitalize flex items-center font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-300 mr-3"></span>
                   {project.locality}
                 </p>
               </div>
-              <div className="mt-8 pt-5 border-t border-slate-100 grid grid-cols-2 gap-4 text-sm text-slate-600">
-                <div className="flex flex-col">
-                  <span className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Total Listings</span>
-                  <span className="font-bold text-slate-900">{project.total_listings}</span>
+
+              <div className="mt-auto">
+                <div className="grid grid-cols-2 gap-4 bg-slate-50/80 p-5 rounded-2xl border border-slate-100/50">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Listings</span>
+                    <span className="text-xl font-black text-slate-800">{project.total_listings}</span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Avg Price / Sqft</span>
+                    <span className="text-lg font-bold text-slate-700">₹{project.avg_price_per_sqft || 'N/A'}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Price Range</span>
-                  <span className="font-bold text-indigo-600">{formatter.format(project.price_min)} - {formatter.format(project.price_max)}</span>
+
+                <div className="mt-4 flex flex-col pt-4 border-t border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Price Range</span>
+                  <span className="text-lg font-extrabold text-indigo-600">
+                    {project.price_min > 0 ? formatter.format(project.price_min) : 'N/A'} - {project.price_max > 0 ? formatter.format(project.price_max) : 'N/A'}
+                  </span>
                 </div>
               </div>
             </div>
