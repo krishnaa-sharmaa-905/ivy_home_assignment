@@ -22,7 +22,8 @@ Every request must carry the API key you were issued. Append it as a query
 parameter:
 
 ```
-GET /v1/listings?api_key=IVY26-XXXXXXXXXXXX
+GET /v1/listings
+X-API-Key: IVY26-XXXXXXXXXXXX
 ```
 
 Your key is scoped to a single city. All endpoints are filtered to that city
@@ -42,9 +43,11 @@ Your frontend must log an end user in.
 
 ```json
 {
-  "token": "eyJhbGciOi...",
+  "access_token": "eyJhbGciOi...",
+  "refresh_token": "...",
   "token_type": "Bearer",
-  "expires_in": 86400,
+  "expires_in": 900,
+  "refresh_url": "/auth/refresh",
   "user": { "email": "demo1@ivy.homes", "name": "Demo User" }
 }
 ```
@@ -52,11 +55,11 @@ Your frontend must log an end user in.
 Send the token on subsequent requests:
 
 ```
-Authorization: Bearer <token>
+Authorization: Bearer <access_token>
 ```
 
-Tokens are valid for 24 hours, so a single login is enough for one working
-session. There is no refresh flow.
+Tokens are valid for 15 minutes. Use `refresh_token` to get a new access token.
+ALL `/v1/*` endpoints require the `Authorization` header, not just saved listings.
 
 #### `POST /auth/logout`
 
@@ -79,26 +82,26 @@ Three demo accounts exist: `demo1@ivy.homes`, `demo2@ivy.homes`,
 
 ### Pagination
 
-Every collection endpoint takes `page` and `limit`.
+Every collection endpoint takes `offset` and `limit`. (Do not use `page`!)
 
 | Parameter | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `page` | int | `1` | 1-indexed |
-| `limit` | int | `20` | Maximum `200` |
+| `offset` | int | `0` | 0-indexed |
+| `limit` | int | `20` | Maximum `50` (Server ignores requests for >50) |
 
 Collection responses are shaped:
 
 ```json
 {
   "total": 1240,
-  "page": 1,
-  "page_size": 20,
+  "offset": 0,
+  "limit": 50,
   "results": [ ... ]
 }
 ```
 
 `total` is the exact number of records matching your filters. To fetch every
-record, read `total`, divide by your `limit`, and request that many pages.
+record, read `results.length`, add it to `offset`, and request the next chunk.
 
 ---
 
@@ -117,7 +120,7 @@ one physical property.
 
 | Parameter | Type | Notes |
 | --- | --- | --- |
-| `page`, `limit` | int | See Pagination |
+| `offset`, `limit` | int | See Pagination |
 | `locality` | string | Exact match, lowercase |
 | `bhk` | int | Number of bedrooms |
 | `property_type` | string | `apartment`, `villa`, `independent house`, `plot`, `builder floor` |
@@ -174,14 +177,13 @@ the seller's own text, shown as written.
 links the listing to a builder project, and is `null` for resale property that
 is not part of one.
 
-### `GET /v1/listing/{listing_id}`
+### `GET /v1/listings/{listing_id}`
 
 A single listing. Same object as above.
 
 ### `GET /v1/listings/{listing_id}/similar`
 
-Up to ten comparable listings — same locality, same bedroom count, price within
-15%. Useful for a "you may also like" strip on the detail page.
+*(Returns 404 - Not implemented by API)*
 
 ---
 
@@ -189,7 +191,7 @@ Up to ten comparable listings — same locality, same bedroom count, price withi
 
 ### `GET /v1/rentals`
 
-Rental listings in your city. Supports `page`, `limit`, `locality`, `bhk`,
+Rental listings in your city. Supports `offset`, `limit`, `locality`, `bhk`,
 `furnishing`, `sort_by`, `order`.
 
 ```json
@@ -236,7 +238,7 @@ A single rental.
 
 ### `GET /v1/projects`
 
-Builder projects in your city. Supports `page`, `limit`, `locality`,
+Builder projects in your city. Supports `offset`, `limit`, `locality`,
 `project_status`, `sort_by` (`price_min`, `price_max`, `launch_date`,
 `total_units`), `order`.
 
@@ -278,23 +280,23 @@ A single project.
 
 ---
 
-## Favourites
+## Saved Listings (Favourites)
 
 A logged-in user can save listings.
 
-### `GET /v1/favourites`
+### `GET /v1/saved`
 
 ```json
 { "count": 3, "results": [ /* listing objects */ ] }
 ```
 
-### `POST /v1/favourites`
+### `POST /v1/saved`
 
 ```json
-{ "id": "100-1000042" }
+{ "listing_id": "100-1000042" }
 ```
 
-### `DELETE /v1/favourites/{id}`
+### `DELETE /v1/saved/{listing_id}`
 
 ---
 
@@ -302,20 +304,7 @@ A logged-in user can save listings.
 
 ### `GET /v1/analytics/summary`
 
-Pre-computed aggregates for your city — handy for a dashboard screen.
-
-```json
-{
-  "city": "bangalore",
-  "total_listings": 1240,
-  "median_price": 11200000,
-  "median_price_per_sqft": 8100,
-  "by_locality": [
-    { "locality": "whitefield", "count": 184, "median_price": 9800000 }
-  ],
-  "by_bhk": [ { "bedroom": 3, "count": 502 } ]
-}
-```
+*(Returns 404 - Not implemented by API)*
 
 ---
 
