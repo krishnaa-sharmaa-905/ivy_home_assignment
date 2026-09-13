@@ -18,8 +18,10 @@ export default function Browse() {
   });
   
   // Price slider state
+  const [dynamicMinPrice, setDynamicMinPrice] = useState(0);
   const [dynamicMaxPrice, setDynamicMaxPrice] = useState(100000000);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000]); // initial max
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000]); // initial
+
 
   const loadListings = async (reset = false) => {
     if (!reset && loading) return;
@@ -55,8 +57,11 @@ export default function Browse() {
         if (filters.locality) valid = valid.filter((l: any) => l.locality.toLowerCase().includes(filters.locality.toLowerCase()));
         if (filters.bhk) valid = valid.filter((l: any) => l.bedroom === parseInt(filters.bhk));
         if (filters.property_type) valid = valid.filter((l: any) => l.property_type.toLowerCase() === filters.property_type.toLowerCase());
-        if (priceRange[0] > 0) valid = valid.filter((l: any) => l.price >= priceRange[0]);
+        
+        // Use exact dynamic bounds if they were touched, otherwise use the sliding priceRange
+        if (priceRange[0] > dynamicMinPrice) valid = valid.filter((l: any) => l.price >= priceRange[0]);
         if (priceRange[1] < dynamicMaxPrice) valid = valid.filter((l: any) => l.price <= priceRange[1]);
+        
         if (filters.furnishing) valid = valid.filter((l: any) => l.furnishing === filters.furnishing);
 
         combined = [...combined, ...valid];
@@ -69,14 +74,22 @@ export default function Browse() {
 
       if (combined.length > 0) {
         const computedMax = Math.max(...combined.map((l: any) => l.price));
-        const roundedMax = Math.ceil(computedMax / 1000000) * 1000000;
+        const computedMin = Math.min(...combined.map((l: any) => l.price));
         
-        if (priceRange[1] >= dynamicMaxPrice) {
-            setDynamicMaxPrice(roundedMax > 10000000 ? roundedMax : 100000000);
-            setPriceRange([priceRange[0], roundedMax > 10000000 ? roundedMax : 100000000]);
-        } else {
-            setDynamicMaxPrice(Math.max(dynamicMaxPrice, roundedMax));
-        }
+        const roundedMax = Math.ceil(computedMax / 1000000) * 1000000;
+        const roundedMin = Math.floor(computedMin / 100000) * 100000; // nearest 1 Lakh
+        
+        const nextMin = roundedMin < dynamicMinPrice || dynamicMinPrice === 0 ? roundedMin : dynamicMinPrice;
+        const nextMax = roundedMax > dynamicMaxPrice ? roundedMax : dynamicMaxPrice;
+        
+        setDynamicMinPrice(nextMin);
+        setDynamicMaxPrice(nextMax);
+        
+        // If slider was previously at its absolute bounds, pull it to the new bounds
+        setPriceRange(prev => [
+            prev[0] <= dynamicMinPrice || prev[0] === 0 ? nextMin : prev[0],
+            prev[1] >= dynamicMaxPrice ? nextMax : prev[1]
+        ]);
       }
     } catch (err) {
       console.error(err);
@@ -145,21 +158,27 @@ export default function Browse() {
 
         <div className="flex flex-col md:flex-row gap-6 items-end">
           <div className="flex-1 w-full">
-            <div className="flex justify-between mb-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Price Range (Dynamic)</label>
-              <span className="text-xs font-bold text-indigo-600">{formatter.format(priceRange[0])} - {priceRange[1] >= dynamicMaxPrice ? 'Any' : formatter.format(priceRange[1])}</span>
-            </div>
-            <div className="px-2 pt-2 pb-1">
-              <Slider 
-                range 
-                min={0} 
-                max={dynamicMaxPrice} 
-                step={100000} 
-                value={priceRange} 
-                onChange={(val: any) => setPriceRange(val)} 
-                trackStyle={[{ backgroundColor: '#4f46e5' }]} 
-                handleStyle={[{ borderColor: '#4f46e5', backgroundColor: '#4f46e5' }, { borderColor: '#4f46e5', backgroundColor: '#4f46e5' }]} 
-              />
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Price Range</label>
+              <div className="px-2 pt-1 pb-2">
+                <Slider 
+                  range 
+                  min={dynamicMinPrice} 
+                  max={dynamicMaxPrice} 
+                  step={100000} 
+                  value={priceRange} 
+                  onChange={(val: any) => setPriceRange(val)} 
+                  styles={{
+                    track: { backgroundColor: '#4f46e5', height: 6 },
+                    handle: { borderColor: '#4f46e5', height: 18, width: 18, marginTop: -6, backgroundColor: '#fff', opacity: 1, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
+                    rail: { backgroundColor: '#e2e8f0', height: 6 }
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-xs font-bold text-slate-400 mt-2">
+                <span>{formatter.format(priceRange[0])}</span>
+                <span>{formatter.format(priceRange[1])}{priceRange[1] >= dynamicMaxPrice ? '+' : ''}</span>
+              </div>
             </div>
             <div className="flex gap-4 mt-4">
               <input type="number" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border transition-all" 

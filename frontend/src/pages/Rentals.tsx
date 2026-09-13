@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { api, cleanListing, isValidListing } from '../api';
 import { Link } from 'react-router-dom';
+import Slider from 'rc-slider';
+import 'rc-slider/assets/index.css';
 
 export default function Rentals() {
   const [rentals, setRentals] = useState<any[]>([]);
@@ -9,6 +11,9 @@ export default function Rentals() {
   const [offset, setOffset] = useState(0);
 
   const [localityFilter, setLocalityFilter] = useState('');
+  const [dynamicMinPrice, setDynamicMinPrice] = useState(0);
+  const [dynamicMaxPrice, setDynamicMaxPrice] = useState(500000); // 5L
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
 
   const loadRentals = async (reset = false) => {
     if (!reset && loading) return;
@@ -23,8 +28,9 @@ export default function Rentals() {
       while (loadedInThisBatch < 10 && hasMoreData && fetchCount < 5) {
         fetchCount++;
         const params: any = { offset: currentOffset, limit: 50 };
-        // We DO NOT pass locality to backend because backend requires exact match,
-        // and we want substring search on the client side.
+        // We DO NOT pass locality to backend because backend requires exact match
+        if (priceRange[0] > dynamicMinPrice) params.min_price = priceRange[0];
+        if (priceRange[1] < dynamicMaxPrice) params.max_price = priceRange[1];
         
         const res = await api.get('/v1/rentals', { params });
         const rawResults = res.data.results || [];
@@ -33,6 +39,8 @@ export default function Rentals() {
         
         let valid = rawResults.map(cleanListing).filter(isValidListing);
         if (localityFilter) valid = valid.filter((l: any) => l.locality.toLowerCase().includes(localityFilter.toLowerCase()));
+        if (priceRange[0] > dynamicMinPrice) valid = valid.filter((l: any) => l.price >= priceRange[0]);
+        if (priceRange[1] < dynamicMaxPrice) valid = valid.filter((l: any) => l.price <= priceRange[1]);
 
         combined = [...combined, ...valid];
         loadedInThisBatch += valid.length;
@@ -41,6 +49,25 @@ export default function Rentals() {
       setRentals(combined);
       setOffset(currentOffset);
       setHasMore(hasMoreData);
+
+      if (combined.length > 0) {
+        const computedMax = Math.max(...combined.map((l: any) => l.price));
+        const computedMin = Math.min(...combined.map((l: any) => l.price));
+        
+        const roundedMax = Math.ceil(computedMax / 10000) * 10000;
+        const roundedMin = Math.floor(computedMin / 5000) * 5000;
+        
+        const nextMin = roundedMin < dynamicMinPrice || dynamicMinPrice === 0 ? roundedMin : dynamicMinPrice;
+        const nextMax = roundedMax > dynamicMaxPrice ? roundedMax : dynamicMaxPrice;
+        
+        setDynamicMinPrice(nextMin);
+        setDynamicMaxPrice(nextMax);
+        
+        setPriceRange(prev => [
+            prev[0] <= dynamicMinPrice || prev[0] === 0 ? nextMin : prev[0],
+            prev[1] >= dynamicMaxPrice ? nextMax : prev[1]
+        ]);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -53,22 +80,46 @@ export default function Rentals() {
       loadRentals(true);
     }, 400);
     return () => clearTimeout(handler);
-  }, [localityFilter]);
+  }, [localityFilter, priceRange]);
 
   const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
   return (
     <div className="space-y-8">
       <div className="bg-white/60 backdrop-blur-xl p-8 rounded-2xl shadow-sm border border-slate-200/60">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div>
+        <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+          <div className="md:w-1/3">
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">Rentals</h2>
             <p className="mt-2 text-slate-500">Discover rental properties across the city.</p>
           </div>
-          <div className="w-full md:w-auto">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Locality</label>
-            <input type="text" className="block w-full min-w-[250px] rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
-                   value={localityFilter} onChange={e => setLocalityFilter(e.target.value)} placeholder="Search by locality..." />
+          <div className="w-full md:w-2/3 flex flex-col sm:flex-row gap-6">
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Locality</label>
+              <input type="text" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
+                     value={localityFilter} onChange={e => setLocalityFilter(e.target.value)} placeholder="Search by locality..." />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Rent Range / mo</label>
+              <div className="px-2 pt-1 pb-2">
+                <Slider 
+                  range 
+                  min={dynamicMinPrice} 
+                  max={dynamicMaxPrice} 
+                  step={5000} 
+                  value={priceRange} 
+                  onChange={(val: any) => setPriceRange(val)} 
+                  styles={{
+                    track: { backgroundColor: '#4f46e5', height: 6 },
+                    handle: { borderColor: '#4f46e5', height: 18, width: 18, marginTop: -6, backgroundColor: '#fff', opacity: 1, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
+                    rail: { backgroundColor: '#e2e8f0', height: 6 }
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-xs font-bold text-slate-400 mt-2">
+                <span>{formatter.format(priceRange[0])}</span>
+                <span>{formatter.format(priceRange[1])}{priceRange[1] >= dynamicMaxPrice ? '+' : ''}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

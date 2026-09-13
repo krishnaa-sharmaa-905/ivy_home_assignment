@@ -14,20 +14,21 @@ export default function ListingDetail() {
   useEffect(() => {
     const fetchListing = async () => {
       try {
-        const res = await api.get(`/v1/listings/${id}`);
+        const endpoint = id?.startsWith('R') ? `/v1/rentals/${id}` : `/v1/listings/${id}`;
+        const res = await api.get(endpoint);
         setListing(cleanListing(res.data));
         
         // Check if saved
         const savedRes = await api.get('/v1/saved');
-        const isS = savedRes.data.results.some((s: any) => s.listing_id === id);
-        setIsSaved(isS);
+        const savedListings = savedRes.data.results || [];
+        setIsSaved(savedListings.some((s: any) => s.listing_id === id));
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchListing();
+    if (id) fetchListing();
   }, [id]);
 
   const toggleSave = async () => {
