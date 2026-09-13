@@ -43,36 +43,37 @@ async function ensureFreshToken() {
 }
 
 async function fetchPaginated(endpoint) {
-  let offset = 0;
-  const limit = 50; // API hard-caps at 50 regardless of what you send
+  let currentOffset = 0;
+  const limit = 50;
+  const CHUNK_SIZE = 20; // 20 concurrent requests
   let allResults = [];
 
   while (true) {
     await ensureFreshToken();
 
-    try {
-      const response = await api.get(endpoint, { params: { offset, limit } });
+    const offsets = Array.from({ length: CHUNK_SIZE }, (_, i) => currentOffset + i * limit);
+    const promises = offsets.map(offset => 
+      api.get(endpoint, { params: { offset, limit } }).then(r => r.data.results || r.data.data || []).catch(e => {
+        console.error(`\n  [error] at offset ${offset}:`, e.message);
+        return [];
+      })
+    );
 
-      if (response.status !== 200) {
-        console.error(`\n  [error] HTTP ${response.status} at offset ${offset}:`, response.data);
+    const chunkResults = await Promise.all(promises);
+    
+    let chunkFinished = false;
+    for (const resArray of chunkResults) {
+      allResults.push(...resArray);
+      if (resArray.length < limit) {
+        chunkFinished = true;
         break;
       }
-
-      const data = response.data;
-      const results = data.results || data.data || [];
-
-      // ✅ KEY FIX: stop ONLY when the API returns an empty page.
-      // Do NOT use data.total — the API's total field under-reports the real count.
-      if (results.length === 0) break;
-
-      allResults = allResults.concat(results);
-      offset += results.length;
-      process.stdout.write(`\r  fetched ${allResults.length} records (API total claims: ${data.total})...`);
-
-    } catch (e) {
-      console.error('\n  [exception]', e.message);
-      break;
     }
+
+    process.stdout.write(`\r  fetched ${allResults.length} records...`);
+    
+    if (chunkFinished) break;
+    currentOffset += CHUNK_SIZE * limit;
   }
 
   process.stdout.write(`\r  fetched ${allResults.length} records total.         \n`);
