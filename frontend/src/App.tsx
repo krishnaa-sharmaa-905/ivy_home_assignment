@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import { Home } from 'lucide-react';
 import Login from './pages/Login';
 import Browse from './pages/Browse';
@@ -7,6 +7,16 @@ import Saved from './pages/Saved';
 import Rentals from './pages/Rentals';
 import Projects from './pages/Projects';
 import Insights from './pages/Insights';
+
+const NavLink = ({ to, children }: { to: string, children: React.ReactNode }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  return (
+    <Link to={to} className={`inline-flex items-center px-1 pt-1 text-sm font-semibold transition-colors border-b-2 ${isActive ? 'text-indigo-600 border-indigo-600' : 'text-slate-600 border-transparent hover:text-indigo-600 hover:border-indigo-300'}`}>
+      {children}
+    </Link>
+  );
+};
 
 const ProtectedRoute = ({ children }: { children: any }) => {
   const token = localStorage.getItem('access_token');
@@ -28,21 +38,11 @@ const Layout = ({ children }: { children: any }) => {
                 <span className="text-xl font-extrabold text-slate-900 tracking-tight">Ivy Homes</span>
               </div>
               <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
-                <Link to="/" className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">
-                  Listings
-                </Link>
-                <Link to="/rentals" className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">
-                  Rentals
-                </Link>
-                <Link to="/projects" className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">
-                  Projects
-                </Link>
-                <Link to="/saved" className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">
-                  Saved
-                </Link>
-                <Link to="/insights" className="inline-flex items-center px-1 pt-1 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">
-                  Insights
-                </Link>
+                <NavLink to="/">Listings</NavLink>
+                <NavLink to="/rentals">Rentals</NavLink>
+                <NavLink to="/projects">Projects</NavLink>
+                <NavLink to="/saved">Saved</NavLink>
+                <NavLink to="/insights">Insights</NavLink>
               </div>
             </div>
             <div className="flex items-center">
