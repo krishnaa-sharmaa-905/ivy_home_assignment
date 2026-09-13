@@ -7,14 +7,17 @@ import 'rc-slider/assets/index.css';
 export default function Browse() {
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const limit = 50;
 
   const [filters, setFilters] = useState({
     locality: '',
     bhk: '',
     property_type: '',
-    furnishing: ''
+    furnishing: '',
+    sort_by: '',
+    order: 'asc'
   });
   
   // Price slider state
@@ -23,61 +26,38 @@ export default function Browse() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000]); // initial
 
 
-  const loadListings = async (reset = false) => {
-    if (!reset && loading) return;
+  const loadListings = async () => {
     setLoading(true);
-    let currentOffset = reset ? 0 : offset;
+    const currentOffset = (page - 1) * limit;
     
     try {
-      let combined = reset ? [] : [...listings];
-      let hasMoreData = true;
-      let loadedInThisBatch = 0;
-      let fetchCount = 0;
-
-      while (loadedInThisBatch < 10 && hasMoreData && fetchCount < 5) {
-        fetchCount++;
-        const params: any = { offset: currentOffset, limit: 50 };
-        // We DO NOT pass locality to backend because backend requires exact match,
-        // and we want substring search on the client side.
-        if (filters.bhk) params.bhk = parseInt(filters.bhk);
-        if (filters.property_type) params.property_type = filters.property_type;
-        if (priceRange[0] > 0) params.min_price = priceRange[0];
-        if (priceRange[1] < dynamicMaxPrice) params.max_price = priceRange[1];
-        if (filters.furnishing) params.furnishing = filters.furnishing;
-
-        const res = await api.get('/v1/listings', { params });
-        
-        const rawResults = res.data.results || [];
-        currentOffset += rawResults.length;
-        hasMoreData = rawResults.length > 0 && currentOffset < res.data.total;
-        
-        let valid = rawResults.map(cleanListing).filter(isValidListing);
-        
-        // Client-side fallback filtering
-        if (filters.locality) valid = valid.filter((l: any) => l.locality.toLowerCase().includes(filters.locality.toLowerCase()));
-        if (filters.bhk) valid = valid.filter((l: any) => l.bedroom === parseInt(filters.bhk));
-        if (filters.property_type) valid = valid.filter((l: any) => l.property_type.toLowerCase() === filters.property_type.toLowerCase());
-        
-        // Use exact dynamic bounds if they were touched, otherwise use the sliding priceRange
-        if (priceRange[0] > dynamicMinPrice) valid = valid.filter((l: any) => l.price >= priceRange[0]);
-        if (priceRange[1] < dynamicMaxPrice) valid = valid.filter((l: any) => l.price <= priceRange[1]);
-        
-        if (filters.furnishing) valid = valid.filter((l: any) => l.furnishing === filters.furnishing);
-
-        combined = [...combined, ...valid];
-        loadedInThisBatch += valid.length;
+      const params: any = { offset: currentOffset, limit };
+      if (filters.locality) params.locality = filters.locality.toLowerCase().trim();
+      if (filters.bhk) params.bhk = parseInt(filters.bhk);
+      if (filters.property_type) params.property_type = filters.property_type;
+      if (priceRange[0] > dynamicMinPrice) params.min_price = priceRange[0];
+      if (priceRange[1] < dynamicMaxPrice) params.max_price = priceRange[1];
+      if (filters.furnishing) params.furnishing = filters.furnishing;
+      if (filters.sort_by) {
+        params.sort_by = filters.sort_by;
+        params.order = filters.order;
       }
 
-      setListings(combined);
-      setOffset(currentOffset);
-      setHasMore(hasMoreData);
+      const res = await api.get('/v1/listings', { params });
+      const rawResults = res.data.results || [];
+      
+      let valid = rawResults.map(cleanListing).filter(isValidListing);
 
-      if (combined.length > 0) {
-        const computedMax = Math.max(...combined.map((l: any) => l.price));
-        const computedMin = Math.min(...combined.map((l: any) => l.price));
+      setListings(valid);
+      setTotal(res.data.total || 0);
+
+      // Only update slider limits if we're on page 1 and no price filter is applied
+      if (page === 1 && valid.length > 0) {
+        const computedMax = Math.max(...valid.map((l: any) => l.price));
+        const computedMin = Math.min(...valid.map((l: any) => l.price));
         
         const roundedMax = Math.ceil(computedMax / 1000000) * 1000000;
-        const roundedMin = Math.floor(computedMin / 100000) * 100000; // nearest 1 Lakh
+        const roundedMin = Math.floor(computedMin / 100000) * 100000;
         
         const nextMin = roundedMin < dynamicMinPrice || dynamicMinPrice === 0 ? roundedMin : dynamicMinPrice;
         const nextMax = roundedMax > dynamicMaxPrice ? roundedMax : dynamicMaxPrice;
@@ -85,7 +65,6 @@ export default function Browse() {
         setDynamicMinPrice(nextMin);
         setDynamicMaxPrice(nextMax);
         
-        // If slider was previously at its absolute bounds, pull it to the new bounds
         setPriceRange(prev => [
             prev[0] <= dynamicMinPrice || prev[0] === 0 ? nextMin : prev[0],
             prev[1] >= dynamicMaxPrice ? nextMax : prev[1]
@@ -99,11 +78,15 @@ export default function Browse() {
   };
 
   useEffect(() => {
+    setPage(1);
+  }, [filters.locality, filters.bhk, filters.property_type, filters.furnishing, filters.sort_by, filters.order, priceRange]);
+
+  useEffect(() => {
     const handler = setTimeout(() => {
-      loadListings(true);
+      loadListings();
     }, 400);
     return () => clearTimeout(handler);
-  }, [filters, priceRange]);
+  }, [page, filters.locality, filters.bhk, filters.property_type, filters.furnishing, filters.sort_by, filters.order, priceRange]);
 
   const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
@@ -152,6 +135,27 @@ export default function Browse() {
               <option value="unfurnished">Unfurnished</option>
               <option value="semi-furnished">Semi-furnished</option>
               <option value="fully-furnished">Fully-furnished</option>
+            </select>
+          </div>
+
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Sort By</label>
+            <select className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all"
+                    value={filters.sort_by} onChange={e => setFilters({...filters, sort_by: e.target.value})}>
+              <option value="">Relevance</option>
+              <option value="price">Price</option>
+              <option value="carpet_area">Carpet Area</option>
+              <option value="posted_at">Date Posted</option>
+              <option value="bedroom">Bedrooms</option>
+            </select>
+          </div>
+
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Order</label>
+            <select className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all"
+                    value={filters.order} onChange={e => setFilters({...filters, order: e.target.value})} disabled={!filters.sort_by}>
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
             </select>
           </div>
         </div>
@@ -228,20 +232,30 @@ export default function Browse() {
         ))}
       </div>
 
-      {hasMore && (
-        <div className="text-center mt-12 pb-12">
-          <button 
-            onClick={() => loadListings(false)} 
-            disabled={loading}
-            className="px-8 py-3 border border-transparent text-sm font-bold rounded-full text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 disabled:opacity-50 transition-all hover:scale-105 active:scale-95"
+      <div className="flex justify-between items-center mt-12 pb-12">
+        <p className="text-sm text-slate-500 font-medium">
+          Showing <span className="font-bold text-slate-900">{listings.length > 0 ? (page - 1) * limit + 1 : 0}</span> to <span className="font-bold text-slate-900">{Math.min(page * limit, total)}</span> of <span className="font-bold text-slate-900">{total}</span> listings
+        </p>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1 || loading}
+            className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 transition-colors"
           >
-            {loading ? 'Loading more properties...' : 'Load More Listings'}
+            Previous
+          </button>
+          <span className="px-4 py-2 flex items-center text-sm font-medium text-slate-900 bg-slate-100 rounded-lg">
+            Page {page} of {Math.max(1, Math.ceil(total / limit))}
+          </span>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            disabled={page >= Math.ceil(total / limit) || loading}
+            className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 transition-colors"
+          >
+            Next
           </button>
         </div>
-      )}
-      {!hasMore && listings.length > 0 && (
-        <p className="text-center text-slate-500 mt-12 pb-12 font-medium">You've reached the end of the listings.</p>
-      )}
+      </div>
     </div>
   );
 }
