@@ -1,3 +1,4 @@
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 
@@ -46,22 +47,33 @@ const corrupt = listings.filter(l => {
 });
 const corrupt_listing_ids = corrupt.map(l => l.listing_id).sort();
 
-// ── 5. total_monthly_rent — SUM of ALL rental prices, no locality filter
-// The question asks for total across the entire city dataset
-const total_monthly_rent = rentals.reduce((sum, r) => sum + r.price, 0);
+// ── 5. total_monthly_rent
+// Sum of monthly rent across all retrievable rental records in assigned locality
+const assignedLocality = (process.env.ASSIGNED_LOCALITY || '').toLowerCase();
+const localRentals = rentals.filter(r => r.locality.toLowerCase() === assignedLocality);
+const total_monthly_rent = localRentals.reduce((sum, r) => sum + r.price, 0);
+
+// ── 9. fake_listing_ids
+const brokerPhones = {};
+for (const l of listings) {
+  if (l.posted_by_name && l.posted_by_contact) {
+    if (!brokerPhones[l.posted_by_name]) brokerPhones[l.posted_by_name] = new Set();
+    brokerPhones[l.posted_by_name].add(l.posted_by_contact);
+  }
+}
+
+const fake = listings.filter(l => {
+  if (/visit only|below market|booking amount/i.test(l.description)) return true;
+  if (l.posted_by_name && brokerPhones[l.posted_by_name] && brokerPhones[l.posted_by_name].size > 1) {
+    return true; // Multiple phones for same broker name
+  }
+  return false;
+});
+const fake_listing_ids = fake.map(l => l.listing_id).sort();
 
 // ── 6. avg_price_per_sqft_2bhk
-// Exclude corrupt + fake listings; only live 2BHK listings
-const fake_listing_ids_set = new Set(); // populated below after fake detection
-const excludeIds = new Set(corrupt_listing_ids);
-
-// ── 9. fake_listing_ids (detected via description patterns)
-// Fake listings ask for upfront booking amount or advertise suspiciously below market
-const fake = listings.filter(l =>
-  /visit only|below market|booking amount/i.test(l.description)
-);
-const fake_listing_ids = fake.map(l => l.listing_id).sort();
-fake_listing_ids.forEach(id => excludeIds.add(id));
+const fake_listing_ids_set = new Set(fake_listing_ids);
+const excludeIds = new Set([...corrupt_listing_ids, ...fake_listing_ids]);
 
 // ── 6. avg_price_per_sqft_2bhk (now excludeIds is complete)
 const valid_2bhk = listings.filter(
