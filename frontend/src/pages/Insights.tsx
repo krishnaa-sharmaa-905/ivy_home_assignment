@@ -109,13 +109,17 @@ function computeStats(rawListings: any[], rawRentals: any[], rawProjects: any[])
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
+let memoryCache: any = null;
+
 export default function Insights() {
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(memoryCache);
+  const [loading, setLoading] = useState(!memoryCache);
   const [progress, setProgress] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (memoryCache) return; // Skip if already computed in this session
+
     async function fetchAndCompute() {
       try {
         setLoading(true);
@@ -130,6 +134,7 @@ export default function Insights() {
 
         setProgress('Computing analytics...');
         const computed = computeStats(rawListings, rawRentals, rawProjects);
+        memoryCache = computed;
         setStats(computed);
       } catch (e: any) {
         setError('Failed to load insights: ' + (e.message || 'unknown error'));
