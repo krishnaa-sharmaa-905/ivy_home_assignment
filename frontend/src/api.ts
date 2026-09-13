@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_KEY = 'IVY26-FCD509DB52CF';
-const BASE_URL = 'https://solve.ivy.homes';
+const API_KEY = import.meta.env.VITE_API_KEY;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const api = axios.create({
   baseURL: BASE_URL,

@@ -1,10 +1,11 @@
+require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 
 const answers = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'answers.json'), 'utf8'));
 
 const template = {
-  "api_key": "IVY26-FCD509DB52CF",
+  "api_key": process.env.API_KEY,
   "candidate": {
     "name": "Krishna Sharma",
     "email": "demo1@ivy.homes", 
