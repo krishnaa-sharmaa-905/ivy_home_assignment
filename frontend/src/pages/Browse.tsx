@@ -62,13 +62,15 @@ export default function Browse() {
         const nextMin = roundedMin < dynamicMinPrice || dynamicMinPrice === 0 ? roundedMin : dynamicMinPrice;
         const nextMax = roundedMax > dynamicMaxPrice ? roundedMax : dynamicMaxPrice;
         
-        setDynamicMinPrice(nextMin);
-        setDynamicMaxPrice(nextMax);
+        if (dynamicMinPrice !== nextMin) setDynamicMinPrice(nextMin);
+        if (dynamicMaxPrice !== nextMax) setDynamicMaxPrice(nextMax);
         
-        setPriceRange(prev => [
-            prev[0] <= dynamicMinPrice || prev[0] === 0 ? nextMin : prev[0],
-            prev[1] >= dynamicMaxPrice ? nextMax : prev[1]
-        ]);
+        setPriceRange(prev => {
+            const newMin = prev[0] <= dynamicMinPrice || prev[0] === 0 ? nextMin : prev[0];
+            const newMax = prev[1] >= dynamicMaxPrice || prev[1] === 100000000 ? nextMax : prev[1];
+            if (prev[0] === newMin && prev[1] === newMax) return prev;
+            return [newMin, newMax];
+        });
       }
     } catch (err) {
       console.error(err);
