@@ -13,21 +13,34 @@ export default function Rentals() {
   const loadRentals = async (reset = false) => {
     if (!reset && loading) return;
     setLoading(true);
-    const currentOffset = reset ? 0 : offset;
+    let currentOffset = reset ? 0 : offset;
     try {
-      const params: any = { offset: currentOffset, limit: 50 };
-      if (localityFilter) params.locality = localityFilter.toLowerCase();
-      
-      const res = await api.get('/v1/rentals', { params });
-      const rawResults = res.data.results || [];
-      const newOffset = currentOffset + rawResults.length;
-      
-      let valid = rawResults.map(cleanListing).filter(isValidListing);
-      if (localityFilter) valid = valid.filter((l: any) => l.locality.toLowerCase().includes(localityFilter.toLowerCase()));
+      let combined = reset ? [] : [...rentals];
+      let hasMoreData = true;
+      let loadedInThisBatch = 0;
+      let fetchCount = 0;
 
-      setRentals(prev => reset ? valid : [...prev, ...valid]);
-      setOffset(newOffset);
-      setHasMore(rawResults.length > 0 && newOffset < res.data.total);
+      while (loadedInThisBatch < 10 && hasMoreData && fetchCount < 5) {
+        fetchCount++;
+        const params: any = { offset: currentOffset, limit: 50 };
+        // We DO NOT pass locality to backend because backend requires exact match,
+        // and we want substring search on the client side.
+        
+        const res = await api.get('/v1/rentals', { params });
+        const rawResults = res.data.results || [];
+        currentOffset += rawResults.length;
+        hasMoreData = rawResults.length > 0 && currentOffset < res.data.total;
+        
+        let valid = rawResults.map(cleanListing).filter(isValidListing);
+        if (localityFilter) valid = valid.filter((l: any) => l.locality.toLowerCase().includes(localityFilter.toLowerCase()));
+
+        combined = [...combined, ...valid];
+        loadedInThisBatch += valid.length;
+      }
+
+      setRentals(combined);
+      setOffset(currentOffset);
+      setHasMore(hasMoreData);
     } catch (err) {
       console.error(err);
     } finally {

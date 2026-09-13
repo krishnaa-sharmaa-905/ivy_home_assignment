@@ -22,46 +22,55 @@ export default function Browse() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000]); // initial max
 
   const loadListings = async (reset = false) => {
-    if (!reset && loading) return; // Only block pagination during loading, allow reset to override
+    if (!reset && loading) return;
     setLoading(true);
-    const currentOffset = reset ? 0 : offset;
+    let currentOffset = reset ? 0 : offset;
     
     try {
-      const params: any = { offset: currentOffset, limit: 50 };
-      if (filters.locality) params.locality = filters.locality.toLowerCase();
-      if (filters.bhk) params.bhk = parseInt(filters.bhk);
-      if (filters.property_type) params.property_type = filters.property_type;
-      if (priceRange[0] > 0) params.min_price = priceRange[0];
-      if (priceRange[1] < dynamicMaxPrice) params.max_price = priceRange[1];
-      if (filters.furnishing) params.furnishing = filters.furnishing;
+      let combined = reset ? [] : [...listings];
+      let hasMoreData = true;
+      let loadedInThisBatch = 0;
+      let fetchCount = 0;
 
-      const res = await api.get('/v1/listings', { params });
-      
-      const rawResults = res.data.results || [];
-      const newOffset = currentOffset + rawResults.length;
-      
-      let valid = rawResults.map(cleanListing).filter(isValidListing);
-      
-      // Client-side fallback filtering
-      if (filters.locality) valid = valid.filter((l: any) => l.locality.toLowerCase().includes(filters.locality.toLowerCase()));
-      if (filters.bhk) valid = valid.filter((l: any) => l.bedroom === parseInt(filters.bhk));
-      if (filters.property_type) valid = valid.filter((l: any) => l.property_type.toLowerCase() === filters.property_type.toLowerCase());
-      if (priceRange[0] > 0) valid = valid.filter((l: any) => l.price >= priceRange[0]);
-      if (priceRange[1] < dynamicMaxPrice) valid = valid.filter((l: any) => l.price <= priceRange[1]);
-      if (filters.furnishing) valid = valid.filter((l: any) => l.furnishing === filters.furnishing);
+      while (loadedInThisBatch < 10 && hasMoreData && fetchCount < 5) {
+        fetchCount++;
+        const params: any = { offset: currentOffset, limit: 50 };
+        // We DO NOT pass locality to backend because backend requires exact match,
+        // and we want substring search on the client side.
+        if (filters.bhk) params.bhk = parseInt(filters.bhk);
+        if (filters.property_type) params.property_type = filters.property_type;
+        if (priceRange[0] > 0) params.min_price = priceRange[0];
+        if (priceRange[1] < dynamicMaxPrice) params.max_price = priceRange[1];
+        if (filters.furnishing) params.furnishing = filters.furnishing;
 
-      const combined = reset ? valid : [...listings, ...valid];
+        const res = await api.get('/v1/listings', { params });
+        
+        const rawResults = res.data.results || [];
+        currentOffset += rawResults.length;
+        hasMoreData = rawResults.length > 0 && currentOffset < res.data.total;
+        
+        let valid = rawResults.map(cleanListing).filter(isValidListing);
+        
+        // Client-side fallback filtering
+        if (filters.locality) valid = valid.filter((l: any) => l.locality.toLowerCase().includes(filters.locality.toLowerCase()));
+        if (filters.bhk) valid = valid.filter((l: any) => l.bedroom === parseInt(filters.bhk));
+        if (filters.property_type) valid = valid.filter((l: any) => l.property_type.toLowerCase() === filters.property_type.toLowerCase());
+        if (priceRange[0] > 0) valid = valid.filter((l: any) => l.price >= priceRange[0]);
+        if (priceRange[1] < dynamicMaxPrice) valid = valid.filter((l: any) => l.price <= priceRange[1]);
+        if (filters.furnishing) valid = valid.filter((l: any) => l.furnishing === filters.furnishing);
+
+        combined = [...combined, ...valid];
+        loadedInThisBatch += valid.length;
+      }
+
       setListings(combined);
-      setOffset(newOffset);
-      setHasMore(rawResults.length > 0 && newOffset < res.data.total);
+      setOffset(currentOffset);
+      setHasMore(hasMoreData);
 
-      // Adjust dynamic max price based on loaded properties if not filtering by price
       if (combined.length > 0) {
         const computedMax = Math.max(...combined.map((l: any) => l.price));
-        // Round up to nearest 10 Lakhs to give slider breathing room
         const roundedMax = Math.ceil(computedMax / 1000000) * 1000000;
         
-        // If we just loaded the first page and haven't touched the slider max, update the max
         if (priceRange[1] >= dynamicMaxPrice) {
             setDynamicMaxPrice(roundedMax > 10000000 ? roundedMax : 100000000);
             setPriceRange([priceRange[0], roundedMax > 10000000 ? roundedMax : 100000000]);

@@ -1,42 +1,45 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api, cleanProject } from '../api';
 
 export default function Projects() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
 
   const [localityFilter, setLocalityFilter] = useState('');
-  const [idFilter, setIdFilter] = useState(searchParams.get('id') || '');
 
   const loadProjects = async (reset = false) => {
     if (!reset && loading) return;
     setLoading(true);
-    const currentOffset = reset ? 0 : offset;
+    let currentOffset = reset ? 0 : offset;
     try {
-      if (idFilter) {
-        // Fetch single project
-        const res = await api.get(`/v1/projects/${idFilter}`);
-        const valid = [cleanProject(res.data)];
-        setProjects(valid);
-        setHasMore(false);
-      } else {
+      let combined = reset ? [] : [...projects];
+      let hasMoreData = true;
+      let loadedInThisBatch = 0;
+      let fetchCount = 0;
+
+      while (loadedInThisBatch < 10 && hasMoreData && fetchCount < 5) {
+        fetchCount++;
         const params: any = { offset: currentOffset, limit: 50 };
-        if (localityFilter) params.locality = localityFilter.toLowerCase();
         
         const res = await api.get('/v1/projects', { params });
         const rawResults = res.data.results || [];
-        const newOffset = currentOffset + rawResults.length;
+        currentOffset += rawResults.length;
+        hasMoreData = rawResults.length > 0 && currentOffset < res.data.total;
         
-        const valid = rawResults.map(cleanProject);
+        let valid = rawResults.map(cleanProject);
+        if (localityFilter) valid = valid.filter((p: any) => p.locality.toLowerCase().includes(localityFilter.toLowerCase()));
 
-        setProjects(prev => reset ? valid : [...prev, ...valid]);
-        setOffset(newOffset);
-        setHasMore(rawResults.length > 0 && newOffset < res.data.total);
+        combined = [...combined, ...valid];
+        loadedInThisBatch += valid.length;
       }
+
+      setProjects(combined);
+      setOffset(currentOffset);
+      setHasMore(hasMoreData);
     } catch (err) {
       console.error(err);
       if (reset) setProjects([]);
@@ -48,14 +51,9 @@ export default function Projects() {
   useEffect(() => {
     const handler = setTimeout(() => {
       loadProjects(true);
-      if (idFilter) {
-        setSearchParams({ id: idFilter });
-      } else {
-        setSearchParams({});
-      }
     }, 400);
     return () => clearTimeout(handler);
-  }, [localityFilter, idFilter]);
+  }, [localityFilter]);
 
   const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
@@ -68,15 +66,10 @@ export default function Projects() {
             <p className="mt-2 text-slate-500">Explore large scale real estate developments.</p>
           </div>
           <div className="flex flex-wrap gap-4 w-full md:w-auto">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Project ID</label>
-              <input type="text" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
-                     value={idFilter} onChange={e => setIdFilter(e.target.value)} placeholder="e.g. PRJ-123" />
-            </div>
-            <div>
+            <div className="w-full md:w-auto">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Locality</label>
-              <input type="text" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
-                     value={localityFilter} onChange={e => setLocalityFilter(e.target.value)} placeholder="e.g. Andheri" disabled={!!idFilter} />
+              <input type="text" className="block w-full min-w-[250px] rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
+                     value={localityFilter} onChange={e => setLocalityFilter(e.target.value)} placeholder="Search by locality..." />
             </div>
           </div>
         </div>
@@ -84,7 +77,7 @@ export default function Projects() {
       
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
         {projects.map((project, idx) => (
-          <div key={`${project.project_id}-${idx}`} className="group relative bg-white rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 flex flex-col hover:-translate-y-2">
+          <div key={`${project.project_id}-${idx}`} onClick={() => navigate(`/projects/${project.project_id}`)} className="cursor-pointer group relative bg-white rounded-[2rem] shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-slate-100 flex flex-col hover:-translate-y-2">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
             
             <div className="p-8 flex-1 flex flex-col relative z-10">
@@ -92,17 +85,18 @@ export default function Projects() {
                 <div className="inline-flex items-center justify-center px-4 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-black tracking-widest uppercase shadow-sm border border-indigo-200">
                   {project.project_id}
                 </div>
-                {project.rera_number && (
-                  <div className="inline-flex items-center justify-center px-4 py-1.5 bg-purple-50 text-purple-700 rounded-full text-xs font-bold tracking-wider uppercase border border-purple-100">
-                    RERA: {project.rera_number}
+                {project.project_status && (
+                  <div className="inline-flex items-center justify-center px-4 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-bold tracking-wider uppercase border border-green-100">
+                    {project.project_status}
                   </div>
                 )}
               </div>
               
-              <div className="mb-8">
-                <h3 className="text-2xl font-extrabold text-slate-900 leading-tight mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                  {project.name}
+              <div className="mb-6">
+                <h3 className="text-2xl font-extrabold text-slate-900 leading-tight mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                  {project.apartment_name || project.name}
                 </h3>
+                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">By {project.developer_name || 'Independent'}</p>
                 <p className="text-base text-slate-500 capitalize flex items-center font-medium">
                   <span className="w-2.5 h-2.5 rounded-full bg-slate-300 mr-3"></span>
                   {project.locality}
@@ -117,7 +111,7 @@ export default function Projects() {
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Avg Price / Sqft</span>
-                    <span className="text-lg font-bold text-slate-700">₹{project.avg_price_per_sqft || 'N/A'}</span>
+                    <span className="text-lg font-bold text-slate-700">{project.avg_price_per_sqft ? `₹${project.avg_price_per_sqft}` : 'N/A'}</span>
                   </div>
                 </div>
 

@@ -6,6 +6,7 @@ import ListingDetail from './pages/ListingDetail';
 import Saved from './pages/Saved';
 import Rentals from './pages/Rentals';
 import Projects from './pages/Projects';
+import ProjectDetail from './pages/ProjectDetail';
 import Insights from './pages/Insights';
 
 const NavLink = ({ to, children }: { to: string, children: React.ReactNode }) => {
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="/listings/:id" element={<ProtectedRoute><Layout><ListingDetail /></Layout></ProtectedRoute>} />
         <Route path="/rentals" element={<ProtectedRoute><Layout><Rentals /></Layout></ProtectedRoute>} />
         <Route path="/projects" element={<ProtectedRoute><Layout><Projects /></Layout></ProtectedRoute>} />
+        <Route path="/projects/:id" element={<ProtectedRoute><Layout><ProjectDetail /></Layout></ProtectedRoute>} />
         <Route path="/saved" element={<ProtectedRoute><Layout><Saved /></Layout></ProtectedRoute>} />
         <Route path="/insights" element={<ProtectedRoute><Layout><Insights /></Layout></ProtectedRoute>} />
       </Routes>
