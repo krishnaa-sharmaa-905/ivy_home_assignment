@@ -3,8 +3,10 @@ import { api, cleanListing, isValidListing } from '../api';
 import { Link } from 'react-router-dom';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
+import { useGlobalData } from '../GlobalContext';
 
 export default function Rentals() {
+  const { stats } = useGlobalData();
   const [rentals, setRentals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -39,7 +41,13 @@ export default function Rentals() {
       let valid = rawResults.map(cleanListing).filter(isValidListing);
 
       setRentals(valid);
-      setTotal(res.data.total || 0);
+
+      const isFiltering = localityFilter || priceRange[0] !== dynamicMinPrice || priceRange[1] !== dynamicMaxPrice;
+      if (!isFiltering && stats?.totalRentals) {
+        setTotal(stats.totalRentals);
+      } else {
+        setTotal(res.data.total || 0);
+      }
 
       if (page === 1 && valid.length > 0) {
         const computedMax = Math.max(...valid.map((l: any) => l.price));
@@ -70,7 +78,14 @@ export default function Rentals() {
 
   useEffect(() => {
     loadRentals();
-  }, [page]);
+  }, [page, sortBy, order]);
+
+  useEffect(() => {
+    const isFiltering = localityFilter || priceRange[0] !== dynamicMinPrice || priceRange[1] !== dynamicMaxPrice;
+    if (!isFiltering && stats?.totalRentals) {
+      setTotal(stats.totalRentals);
+    }
+  }, [stats]);
 
   const handleSearch = () => {
     if (page !== 1) {

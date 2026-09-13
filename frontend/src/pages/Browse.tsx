@@ -3,8 +3,10 @@ import { api, cleanListing, isValidListing } from '../api';
 import { Link } from 'react-router-dom';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
+import { useGlobalData } from '../GlobalContext';
 
 export default function Browse() {
+  const { stats } = useGlobalData();
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -49,7 +51,13 @@ export default function Browse() {
       let valid = rawResults.map(cleanListing).filter(isValidListing);
 
       setListings(valid);
-      setTotal(res.data.total || 0);
+      
+      const isFiltering = filters.locality || filters.bhk || filters.property_type || priceRange[0] !== dynamicMinPrice || priceRange[1] !== dynamicMaxPrice;
+      if (!isFiltering && stats?.totalListingRecords) {
+        setTotal(stats.totalListingRecords);
+      } else {
+        setTotal(res.data.total || 0);
+      }
 
       // Only update slider limits if we're on page 1 and no price filter is applied
       if (page === 1 && valid.length > 0) {
@@ -82,6 +90,13 @@ export default function Browse() {
   useEffect(() => {
     loadListings();
   }, [page]);
+
+  useEffect(() => {
+    const isFiltering = filters.locality || filters.bhk || filters.property_type || priceRange[0] !== dynamicMinPrice || priceRange[1] !== dynamicMaxPrice;
+    if (!isFiltering && stats?.totalListingRecords) {
+      setTotal(stats.totalListingRecords);
+    }
+  }, [stats]);
 
   const handleSearch = () => {
     if (page !== 1) {

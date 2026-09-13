@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api, cleanProject } from '../api';
+import { useGlobalData } from '../GlobalContext';
 
 export default function Projects() {
+  const { stats } = useGlobalData();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -23,7 +25,11 @@ export default function Projects() {
       const valid = rawResults.map(cleanProject);
 
       setProjects(valid);
-      setTotal(res.data.total || 0);
+      if (!localityFilter && stats?.totalProjects) {
+        setTotal(stats.totalProjects);
+      } else {
+        setTotal(res.data.total || 0);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -34,6 +40,12 @@ export default function Projects() {
   useEffect(() => {
     loadProjects();
   }, [page]);
+
+  useEffect(() => {
+    if (!localityFilter && stats?.totalProjects) {
+      setTotal(stats.totalProjects);
+    }
+  }, [stats]);
 
   const handleSearch = () => {
     if (page !== 1) {
