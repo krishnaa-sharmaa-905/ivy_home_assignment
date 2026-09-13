@@ -5,35 +5,32 @@ export const GlobalContext = createContext<any>(null);
 
 async function fetchAllPagesFast(endpoint: string): Promise<any[]> {
   const limit = 50;
-  const firstRes = await api.get(endpoint, { params: { offset: 0, limit } });
-  const firstResults: any[] = firstRes.data.results || [];
-  if (firstResults.length === 0) return [];
+  let combined: any[] = [];
+  let currentOffset = 0;
+  const CHUNK_SIZE = 20; // Fetch 20 pages (1000 items) in parallel
 
-  const apiTotal: number = firstRes.data.total || 0;
-  const knownPageCount = Math.max(1, Math.ceil(apiTotal / limit));
-  const parallelOffsets = Array.from(
-    { length: knownPageCount - 1 },
-    (_, i) => (i + 1) * limit
-  );
-  const parallelPages = await Promise.all(
-    parallelOffsets.map(offset =>
+  while (true) {
+    const offsets = Array.from({ length: CHUNK_SIZE }, (_, i) => currentOffset + i * limit);
+    const promises = offsets.map(offset => 
       api.get(endpoint, { params: { offset, limit } }).then(r => r.data.results || [])
-    )
-  );
-
-  let combined = [...firstResults, ...parallelPages.flat()];
-  let currentOffset = knownPageCount * limit;
-  let keepFetching = true;
-
-  while (keepFetching) {
-    const res = await api.get(endpoint, { params: { offset: currentOffset, limit } });
-    const results = res.data.results || [];
-    if (results.length === 0) {
-      keepFetching = false;
-    } else {
-      combined = [...combined, ...results];
-      currentOffset += limit;
+    );
+    
+    const results = await Promise.all(promises);
+    
+    let chunkFinished = false;
+    for (const resArray of results) {
+      combined.push(...resArray);
+      if (resArray.length < limit) {
+        chunkFinished = true;
+        break;
+      }
     }
+    
+    if (chunkFinished) {
+      break;
+    }
+    
+    currentOffset += CHUNK_SIZE * limit;
   }
 
   return combined;
