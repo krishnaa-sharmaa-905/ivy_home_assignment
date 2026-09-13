@@ -62,31 +62,31 @@ export default function Browse() {
   const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-4 rounded-lg shadow flex flex-wrap gap-4 items-end">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Locality</label>
-          <input type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" 
+    <div className="space-y-8">
+      <div className="bg-white/60 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-slate-200/60 flex flex-wrap gap-5 items-end">
+        <div className="flex-1 min-w-[200px]">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Locality</label>
+          <input type="text" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
                  value={filters.locality} onChange={e => setFilters({...filters, locality: e.target.value})} placeholder="e.g. Andheri West" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Bedrooms</label>
-          <input type="number" className="mt-1 block w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" 
+        <div className="w-24">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">BHK</label>
+          <input type="number" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
                  value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})} />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Min Price</label>
-          <input type="number" className="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" 
-                 value={filters.min_price} onChange={e => setFilters({...filters, min_price: e.target.value})} />
+        <div className="w-32">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Min Price</label>
+          <input type="number" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
+                 value={filters.min_price} onChange={e => setFilters({...filters, min_price: e.target.value})} placeholder="0" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Max Price</label>
-          <input type="number" className="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" 
-                 value={filters.max_price} onChange={e => setFilters({...filters, max_price: e.target.value})} />
+        <div className="w-32">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Max Price</label>
+          <input type="number" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
+                 value={filters.max_price} onChange={e => setFilters({...filters, max_price: e.target.value})} placeholder="Any" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Furnishing</label>
-          <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-white"
+        <div className="w-40">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Furnishing</label>
+          <select className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all"
                   value={filters.furnishing} onChange={e => setFilters({...filters, furnishing: e.target.value})}>
             <option value="">Any</option>
             <option value="unfurnished">Unfurnished</option>
@@ -96,23 +96,33 @@ export default function Browse() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {listings.map((listing, idx) => (
-          <Link key={`${listing.listing_id}-${idx}`} to={`/listings/${listing.listing_id}`} className="bg-white rounded-lg shadow hover:shadow-md transition overflow-hidden block">
-            <div className="p-5">
-              <div className="flex justify-between items-start">
-                <h3 className="text-lg font-bold text-gray-900 truncate">{listing.bedroom} BHK {listing.property_type}</h3>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {formatter.format(listing.price)}
-                </span>
+          <Link key={`${listing.listing_id}-${idx}`} to={`/listings/${listing.listing_id}`} className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 overflow-hidden block border border-slate-100 flex flex-col">
+            <div className="h-48 bg-slate-100 overflow-hidden relative">
+              <img src={`https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=600&q=80&sig=${idx}`} alt="Property" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-indigo-700 shadow-sm">
+                {listing.property_type.toUpperCase()}
               </div>
-              <p className="text-sm text-gray-500 mt-1 capitalize">{listing.locality}</p>
-              <div className="mt-4 grid grid-cols-2 gap-4 text-sm text-gray-600">
-                <div>
-                  <span className="font-semibold">{Math.round(listing.carpet_area)}</span> sqft
+            </div>
+            <div className="p-6 flex-1 flex flex-col justify-between">
+              <div>
+                <div className="flex justify-between items-start gap-4">
+                  <h3 className="text-xl font-bold text-slate-900 leading-tight">{listing.bedroom} BHK in {listing.apartment_name || listing.locality}</h3>
                 </div>
-                <div className="capitalize">
-                  {listing.furnishing}
+                <p className="text-sm text-slate-500 mt-2 capitalize flex items-center">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2"></span>
+                  {listing.locality}
+                </p>
+              </div>
+              <div className="mt-6 pt-6 border-t border-slate-100 grid grid-cols-2 gap-4 text-sm text-slate-600">
+                <div className="flex flex-col">
+                  <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Area</span>
+                  <span className="font-bold text-slate-900">{Math.round(listing.carpet_area)} sqft</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Price</span>
+                  <span className="font-bold text-indigo-600 text-lg">{formatter.format(listing.price)}</span>
                 </div>
               </div>
             </div>
@@ -121,18 +131,18 @@ export default function Browse() {
       </div>
 
       {hasMore && (
-        <div className="text-center mt-6">
+        <div className="text-center mt-12 pb-12">
           <button 
             onClick={() => loadListings()} 
             disabled={loading}
-            className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 disabled:opacity-50"
+            className="px-8 py-3 border border-transparent text-sm font-bold rounded-full text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 disabled:opacity-50 transition-all hover:scale-105 active:scale-95"
           >
-            {loading ? 'Loading...' : 'Load More'}
+            {loading ? 'Loading more properties...' : 'Load More Listings'}
           </button>
         </div>
       )}
       {!hasMore && listings.length > 0 && (
-        <p className="text-center text-gray-500 mt-6">No more listings</p>
+        <p className="text-center text-slate-500 mt-12 pb-12 font-medium">You've reached the end of the listings.</p>
       )}
     </div>
   );

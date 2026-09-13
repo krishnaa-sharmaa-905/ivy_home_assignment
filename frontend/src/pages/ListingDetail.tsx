@@ -53,63 +53,87 @@ export default function ListingDetail() {
   const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-        <h3 className="text-2xl font-bold leading-6 text-gray-900">
-          {listing.bedroom} BHK {listing.property_type} in {listing.apartment_name || 'Independent Property'}
-        </h3>
-        <div className="flex items-center space-x-4">
-          <span className="text-2xl font-bold text-indigo-600">{formatter.format(listing.price)}</span>
+    <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden max-w-5xl mx-auto">
+      <div className="h-64 sm:h-80 w-full relative">
+        <img src={`https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80`} alt="Property Cover" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+        <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end">
+          <div>
+            <div className="inline-block px-3 py-1 bg-indigo-600 text-white rounded-full text-xs font-bold tracking-wider uppercase mb-3 shadow-lg">
+              {listing.property_type}
+            </div>
+            <h3 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight drop-shadow-md">
+              {listing.bedroom} BHK in {listing.apartment_name || 'Independent Property'}
+            </h3>
+          </div>
           <button 
             onClick={toggleSave}
             disabled={saving}
-            className={`p-2 rounded-full ${isSaved ? 'text-indigo-600 bg-indigo-100' : 'text-gray-400 bg-gray-100 hover:text-gray-500'}`}
+            className={`p-4 rounded-full backdrop-blur-md shadow-xl transition-all hover:scale-105 active:scale-95 ${isSaved ? 'text-indigo-400 bg-white/90' : 'text-white bg-white/20 hover:bg-white/30'}`}
           >
-            {isSaved ? <BookmarkCheck className="w-6 h-6" /> : <Bookmark className="w-6 h-6" />}
+            {isSaved ? <BookmarkCheck className="w-7 h-7" /> : <Bookmark className="w-7 h-7" />}
           </button>
         </div>
       </div>
-      <div className="px-6 py-5">
-        <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500">Locality</dt>
-            <dd className="mt-1 text-sm text-gray-900 capitalize">{listing.locality}</dd>
+
+      <div className="p-8 sm:p-10">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10 pb-10 border-b border-slate-100">
+          <div>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">Asking Price</p>
+            <span className="text-4xl font-extrabold text-indigo-600 block mt-1">{formatter.format(listing.price)}</span>
           </div>
-          <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500">Area</dt>
-            <dd className="mt-1 text-sm text-gray-900">{Math.round(listing.carpet_area)} sqft (Carpet)</dd>
+          <div className="flex gap-4">
+            <div className="bg-slate-50 px-6 py-4 rounded-2xl text-center">
+              <span className="block text-2xl font-bold text-slate-900">{Math.round(listing.carpet_area)}</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sq.Ft</span>
+            </div>
+            <div className="bg-slate-50 px-6 py-4 rounded-2xl text-center">
+              <span className="block text-2xl font-bold text-slate-900">{formatter.format(listing.price / listing.carpet_area)}</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Per Sq.Ft</span>
+            </div>
           </div>
-          <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500">Furnishing</dt>
-            <dd className="mt-1 text-sm text-gray-900 capitalize">{listing.furnishing}</dd>
+        </div>
+
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4">
+          <div className="col-span-2 sm:col-span-1">
+            <dt className="text-xs font-bold text-slate-400 uppercase tracking-wider">Locality</dt>
+            <dd className="mt-2 text-lg font-semibold text-slate-900 capitalize">{listing.locality}</dd>
           </div>
-          <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500">Floor</dt>
-            <dd className="mt-1 text-sm text-gray-900">{listing.floor} out of {listing.total_floors}</dd>
+          <div className="col-span-2 sm:col-span-1">
+            <dt className="text-xs font-bold text-slate-400 uppercase tracking-wider">Furnishing</dt>
+            <dd className="mt-2 text-lg font-semibold text-slate-900 capitalize">{listing.furnishing}</dd>
           </div>
-          <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500">Bathrooms</dt>
-            <dd className="mt-1 text-sm text-gray-900">{listing.bathroom}</dd>
+          <div className="col-span-1">
+            <dt className="text-xs font-bold text-slate-400 uppercase tracking-wider">Floor</dt>
+            <dd className="mt-2 text-lg font-semibold text-slate-900">{listing.floor} <span className="text-sm text-slate-500 font-normal">of {listing.total_floors}</span></dd>
           </div>
-          <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500">Balconies</dt>
-            <dd className="mt-1 text-sm text-gray-900">{listing.balcony}</dd>
+          <div className="col-span-1">
+            <dt className="text-xs font-bold text-slate-400 uppercase tracking-wider">Bathrooms</dt>
+            <dd className="mt-2 text-lg font-semibold text-slate-900">{listing.bathroom}</dd>
           </div>
-          <div className="sm:col-span-1">
-            <dt className="text-sm font-medium text-gray-500">Posted By</dt>
-            <dd className="mt-1 text-sm text-gray-900 capitalize">{listing.posted_by_name} ({listing.posted_by})</dd>
+          <div className="col-span-2 sm:col-span-2">
+            <dt className="text-xs font-bold text-slate-400 uppercase tracking-wider">Posted By</dt>
+            <dd className="mt-2 text-lg font-semibold text-slate-900 capitalize flex items-center">
+              <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold mr-3">
+                {listing.posted_by_name?.charAt(0) || 'A'}
+              </div>
+              <div>
+                {listing.posted_by_name}
+                <span className="block text-sm text-slate-500 font-normal">{listing.posted_by}</span>
+              </div>
+            </dd>
           </div>
           {listing.project_id && (
-            <div className="sm:col-span-1">
-              <dt className="text-sm font-medium text-gray-500">Project ID</dt>
-              <dd className="mt-1 text-sm text-indigo-600 cursor-pointer" onClick={() => navigate('/projects')}>
-                {listing.project_id}
+            <div className="col-span-2 sm:col-span-2">
+              <dt className="text-xs font-bold text-slate-400 uppercase tracking-wider">Project details</dt>
+              <dd className="mt-2 text-lg font-semibold text-indigo-600 cursor-pointer hover:text-indigo-800 transition-colors" onClick={() => navigate('/projects')}>
+                View Project {listing.project_id} &rarr;
               </dd>
             </div>
           )}
-          <div className="sm:col-span-4">
-            <dt className="text-sm font-medium text-gray-500">Description</dt>
-            <dd className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{listing.description}</dd>
+          <div className="col-span-2 sm:col-span-4 mt-4 bg-slate-50 rounded-2xl p-6 sm:p-8">
+            <dt className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">About this property</dt>
+            <dd className="text-base text-slate-700 whitespace-pre-wrap leading-relaxed">{listing.description}</dd>
           </div>
         </dl>
       </div>
