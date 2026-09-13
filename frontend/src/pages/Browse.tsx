@@ -22,6 +22,7 @@ export default function Browse() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000]); // initial max
 
   const loadListings = async (reset = false) => {
+    if (!reset && loading) return; // Only block pagination during loading, allow reset to override
     setLoading(true);
     const currentOffset = reset ? 0 : offset;
     
@@ -42,7 +43,7 @@ export default function Browse() {
       let valid = rawResults.map(cleanListing).filter(isValidListing);
       
       // Client-side fallback filtering
-      if (filters.locality) valid = valid.filter((l: any) => l.locality.toLowerCase() === filters.locality.toLowerCase());
+      if (filters.locality) valid = valid.filter((l: any) => l.locality.toLowerCase().includes(filters.locality.toLowerCase()));
       if (filters.bhk) valid = valid.filter((l: any) => l.bedroom === parseInt(filters.bhk));
       if (filters.property_type) valid = valid.filter((l: any) => l.property_type.toLowerCase() === filters.property_type.toLowerCase());
       if (priceRange[0] > 0) valid = valid.filter((l: any) => l.price >= priceRange[0]);
@@ -76,12 +77,11 @@ export default function Browse() {
   };
 
   useEffect(() => {
-    loadListings(true);
-  }, []); // Only run once on mount
-
-  const handleSearch = () => {
-    loadListings(true);
-  };
+    const handler = setTimeout(() => {
+      loadListings(true);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [filters, priceRange]);
 
   const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
 
@@ -96,8 +96,15 @@ export default function Browse() {
           </div>
           <div className="w-24">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">BHK</label>
-            <input type="number" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
-                   value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})} />
+            <select className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all"
+                    value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})}>
+              <option value="">Any</option>
+              <option value="1">1 BHK</option>
+              <option value="2">2 BHK</option>
+              <option value="3">3 BHK</option>
+              <option value="4">4 BHK</option>
+              <option value="5">5+ BHK</option>
+            </select>
           </div>
           <div className="w-40">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Type</label>
@@ -152,12 +159,6 @@ export default function Browse() {
                    value={priceRange[1]} onChange={e => setPriceRange([priceRange[0], parseInt(e.target.value) || dynamicMaxPrice])} placeholder="Max Price" />
             </div>
           </div>
-          <button 
-            onClick={handleSearch}
-            className="w-full md:w-auto px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition-colors"
-          >
-            Search
-          </button>
         </div>
       </div>
 

@@ -137,7 +137,7 @@ export default function ListingDetail() {
           {listing.project_id && (
             <div className="col-span-2 sm:col-span-2">
               <dt className="text-xs font-bold text-slate-400 uppercase tracking-wider">Project details</dt>
-              <dd className="mt-2 text-lg font-semibold text-indigo-600 cursor-pointer hover:text-indigo-800 transition-colors inline-flex items-center" onClick={() => navigate('/projects')}>
+              <dd className="mt-2 text-lg font-semibold text-indigo-600 cursor-pointer hover:text-indigo-800 transition-colors inline-flex items-center" onClick={() => navigate(`/projects?id=${listing.project_id}`)}>
                 View Project {listing.project_id} &rarr;
               </dd>
             </div>
