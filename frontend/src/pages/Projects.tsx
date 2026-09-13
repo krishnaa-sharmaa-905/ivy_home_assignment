@@ -27,6 +27,13 @@ export default function Projects() {
       setProjects(valid);
       if (!localityFilter && stats?.totalProjects) {
         setTotal(stats.totalProjects);
+      } else if (localityFilter && stats?.rawProjects) {
+        let count = 0;
+        for (const p of stats.rawProjects) {
+          if (p.locality && !p.locality.toLowerCase().includes(localityFilter.toLowerCase())) continue;
+          count++;
+        }
+        setTotal(count);
       } else {
         setTotal(res.data.total || 0);
       }
@@ -44,6 +51,13 @@ export default function Projects() {
   useEffect(() => {
     if (!localityFilter && stats?.totalProjects) {
       setTotal(stats.totalProjects);
+    } else if (localityFilter && stats?.rawProjects) {
+      let count = 0;
+      for (const p of stats.rawProjects) {
+        if (p.locality && !p.locality.toLowerCase().includes(localityFilter.toLowerCase())) continue;
+        count++;
+      }
+      setTotal(count);
     }
   }, [stats]);
 

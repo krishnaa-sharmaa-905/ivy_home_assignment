@@ -55,6 +55,18 @@ export default function Browse() {
       const isFiltering = filters.locality || filters.bhk || filters.property_type || priceRange[0] !== dynamicMinPrice || priceRange[1] !== dynamicMaxPrice;
       if (!isFiltering && stats?.totalListingRecords) {
         setTotal(stats.totalListingRecords);
+      } else if (isFiltering && stats?.rawListings) {
+        // Calculate EXACT total manually since backend total is wrong for filtered queries
+        let count = 0;
+        for (const l of stats.rawListings) {
+          if (filters.locality && !l.locality.toLowerCase().includes(filters.locality.toLowerCase())) continue;
+          if (filters.bhk && l.bedroom !== parseInt(filters.bhk)) continue;
+          if (filters.property_type && l.property_type !== filters.property_type) continue;
+          if (priceRange[0] !== dynamicMinPrice && l.price < priceRange[0]) continue;
+          if (priceRange[1] !== dynamicMaxPrice && l.price > priceRange[1]) continue;
+          count++;
+        }
+        setTotal(count);
       } else {
         setTotal(res.data.total || 0);
       }
@@ -95,6 +107,17 @@ export default function Browse() {
     const isFiltering = filters.locality || filters.bhk || filters.property_type || priceRange[0] !== dynamicMinPrice || priceRange[1] !== dynamicMaxPrice;
     if (!isFiltering && stats?.totalListingRecords) {
       setTotal(stats.totalListingRecords);
+    } else if (isFiltering && stats?.rawListings) {
+      let count = 0;
+      for (const l of stats.rawListings) {
+        if (filters.locality && !l.locality.toLowerCase().includes(filters.locality.toLowerCase())) continue;
+        if (filters.bhk && l.bedroom !== parseInt(filters.bhk)) continue;
+        if (filters.property_type && l.property_type !== filters.property_type) continue;
+        if (priceRange[0] !== dynamicMinPrice && l.price < priceRange[0]) continue;
+        if (priceRange[1] !== dynamicMaxPrice && l.price > priceRange[1]) continue;
+        count++;
+      }
+      setTotal(count);
     }
   }, [stats]);
 

@@ -45,6 +45,15 @@ export default function Rentals() {
       const isFiltering = localityFilter || priceRange[0] !== dynamicMinPrice || priceRange[1] !== dynamicMaxPrice;
       if (!isFiltering && stats?.totalRentals) {
         setTotal(stats.totalRentals);
+      } else if (isFiltering && stats?.rawRentals) {
+        let count = 0;
+        for (const r of stats.rawRentals) {
+          if (localityFilter && !r.locality.toLowerCase().includes(localityFilter.toLowerCase())) continue;
+          if (priceRange[0] !== dynamicMinPrice && r.price < priceRange[0]) continue;
+          if (priceRange[1] !== dynamicMaxPrice && r.price > priceRange[1]) continue;
+          count++;
+        }
+        setTotal(count);
       } else {
         setTotal(res.data.total || 0);
       }
@@ -84,6 +93,15 @@ export default function Rentals() {
     const isFiltering = localityFilter || priceRange[0] !== dynamicMinPrice || priceRange[1] !== dynamicMaxPrice;
     if (!isFiltering && stats?.totalRentals) {
       setTotal(stats.totalRentals);
+    } else if (isFiltering && stats?.rawRentals) {
+      let count = 0;
+      for (const r of stats.rawRentals) {
+        if (localityFilter && !r.locality.toLowerCase().includes(localityFilter.toLowerCase())) continue;
+        if (priceRange[0] !== dynamicMinPrice && r.price < priceRange[0]) continue;
+        if (priceRange[1] !== dynamicMaxPrice && r.price > priceRange[1]) continue;
+        count++;
+      }
+      setTotal(count);
     }
   }, [stats]);
 

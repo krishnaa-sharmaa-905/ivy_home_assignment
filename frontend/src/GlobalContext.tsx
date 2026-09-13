@@ -125,7 +125,12 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
 
         setProgress('Computing analytics...');
         const computed = computeStats(rawListings, rawRentals, rawProjects);
-        setStats(computed);
+        setStats({
+          ...computed,
+          rawListings: rawListings.map(cleanListing),
+          rawRentals,
+          rawProjects: rawProjects.map(cleanProject)
+        });
       } catch (err: any) {
         console.error(err);
         setError(err.message);
