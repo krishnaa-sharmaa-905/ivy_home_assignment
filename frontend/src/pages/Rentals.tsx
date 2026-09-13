@@ -52,12 +52,14 @@ export default function Rentals() {
                   <div className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold tracking-wider uppercase">
                     {rental.property_type}
                   </div>
-                  <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold tracking-wider uppercase">
-                    {rental.furnishing}
-                  </div>
+                  {rental.property_type !== 'plot' && rental.property_type !== 'land' && (
+                    <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold tracking-wider uppercase">
+                      {rental.furnishing}
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 leading-tight mb-2 group-hover:text-indigo-600 transition-colors">
-                  {rental.bedroom} BHK in {rental.apartment_name || 'Independent'}
+                  {rental.bedroom > 0 ? `${rental.bedroom} BHK ${rental.property_type}` : rental.property_type.charAt(0).toUpperCase() + rental.property_type.slice(1)} in {rental.apartment_name || 'Independent'}
                 </h3>
                 <p className="text-sm text-slate-500 capitalize flex items-center">
                   <span className="w-2 h-2 rounded-full bg-slate-300 mr-2"></span>

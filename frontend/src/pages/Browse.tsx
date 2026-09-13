@@ -13,11 +13,13 @@ export default function Browse() {
   const [filters, setFilters] = useState({
     locality: '',
     bhk: '',
+    property_type: '',
     furnishing: ''
   });
   
   // Price slider state
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000]); // 0 to 10 Cr
+  const [dynamicMaxPrice, setDynamicMaxPrice] = useState(100000000);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000000]); // initial max
 
   const loadListings = async (reset = false) => {
     setLoading(true);
@@ -27,8 +29,9 @@ export default function Browse() {
       const params: any = { offset: currentOffset, limit: 50 };
       if (filters.locality) params.locality = filters.locality.toLowerCase();
       if (filters.bhk) params.bhk = parseInt(filters.bhk);
+      if (filters.property_type) params.property_type = filters.property_type;
       if (priceRange[0] > 0) params.min_price = priceRange[0];
-      if (priceRange[1] < 100000000) params.max_price = priceRange[1];
+      if (priceRange[1] < dynamicMaxPrice) params.max_price = priceRange[1];
       if (filters.furnishing) params.furnishing = filters.furnishing;
 
       const res = await api.get('/v1/listings', { params });
@@ -41,13 +44,30 @@ export default function Browse() {
       // Client-side fallback filtering
       if (filters.locality) valid = valid.filter((l: any) => l.locality.toLowerCase() === filters.locality.toLowerCase());
       if (filters.bhk) valid = valid.filter((l: any) => l.bedroom === parseInt(filters.bhk));
+      if (filters.property_type) valid = valid.filter((l: any) => l.property_type.toLowerCase() === filters.property_type.toLowerCase());
       if (priceRange[0] > 0) valid = valid.filter((l: any) => l.price >= priceRange[0]);
-      if (priceRange[1] < 100000000) valid = valid.filter((l: any) => l.price <= priceRange[1]);
+      if (priceRange[1] < dynamicMaxPrice) valid = valid.filter((l: any) => l.price <= priceRange[1]);
       if (filters.furnishing) valid = valid.filter((l: any) => l.furnishing === filters.furnishing);
 
-      setListings(prev => reset ? valid : [...prev, ...valid]);
+      const combined = reset ? valid : [...listings, ...valid];
+      setListings(combined);
       setOffset(newOffset);
       setHasMore(rawResults.length > 0 && newOffset < res.data.total);
+
+      // Adjust dynamic max price based on loaded properties if not filtering by price
+      if (combined.length > 0) {
+        const computedMax = Math.max(...combined.map((l: any) => l.price));
+        // Round up to nearest 10 Lakhs to give slider breathing room
+        const roundedMax = Math.ceil(computedMax / 1000000) * 1000000;
+        
+        // If we just loaded the first page and haven't touched the slider max, update the max
+        if (priceRange[1] >= dynamicMaxPrice) {
+            setDynamicMaxPrice(roundedMax > 10000000 ? roundedMax : 100000000);
+            setPriceRange([priceRange[0], roundedMax > 10000000 ? roundedMax : 100000000]);
+        } else {
+            setDynamicMaxPrice(Math.max(dynamicMaxPrice, roundedMax));
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -69,7 +89,7 @@ export default function Browse() {
     <div className="space-y-8">
       <div className="bg-white/60 backdrop-blur-xl p-6 rounded-2xl shadow-sm border border-slate-200/60 flex flex-col gap-6">
         <div className="flex flex-wrap gap-5 items-end">
-          <div className="flex-1 min-w-[200px]">
+          <div className="flex-1 min-w-[150px]">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Locality</label>
             <input type="text" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
                    value={filters.locality} onChange={e => setFilters({...filters, locality: e.target.value})} placeholder="e.g. Andheri West" />
@@ -78,6 +98,22 @@ export default function Browse() {
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">BHK</label>
             <input type="number" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all" 
                    value={filters.bhk} onChange={e => setFilters({...filters, bhk: e.target.value})} />
+          </div>
+          <div className="w-40">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Type</label>
+            <select className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 border transition-all"
+                    value={filters.property_type} onChange={e => setFilters({...filters, property_type: e.target.value})}>
+              <option value="">Any</option>
+              <option value="apartment">Apartment</option>
+              <option value="villa">Villa</option>
+              <option value="independent floor">Independent Floor</option>
+              <option value="independent house">Independent House</option>
+              <option value="plot">Plot</option>
+              <option value="land">Land</option>
+              <option value="studio">Studio</option>
+              <option value="duplex">Duplex</option>
+              <option value="penthouse">Penthouse</option>
+            </select>
           </div>
           <div className="w-40">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Furnishing</label>
@@ -94,15 +130,15 @@ export default function Browse() {
         <div className="flex flex-col md:flex-row gap-6 items-end">
           <div className="flex-1 w-full">
             <div className="flex justify-between mb-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Price Range</label>
-              <span className="text-xs font-bold text-indigo-600">{formatter.format(priceRange[0])} - {priceRange[1] >= 100000000 ? 'Any' : formatter.format(priceRange[1])}</span>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Price Range (Dynamic)</label>
+              <span className="text-xs font-bold text-indigo-600">{formatter.format(priceRange[0])} - {priceRange[1] >= dynamicMaxPrice ? 'Any' : formatter.format(priceRange[1])}</span>
             </div>
             <div className="px-2 pt-2 pb-1">
               <Slider 
                 range 
                 min={0} 
-                max={100000000} 
-                step={500000} 
+                max={dynamicMaxPrice} 
+                step={100000} 
                 value={priceRange} 
                 onChange={(val: any) => setPriceRange(val)} 
                 trackStyle={[{ backgroundColor: '#4f46e5' }]} 
@@ -113,7 +149,7 @@ export default function Browse() {
               <input type="number" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border transition-all" 
                    value={priceRange[0]} onChange={e => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])} placeholder="Min Price" />
               <input type="number" className="block w-full rounded-xl border-slate-200 bg-white/50 focus:bg-white focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border transition-all" 
-                   value={priceRange[1]} onChange={e => setPriceRange([priceRange[0], parseInt(e.target.value) || 100000000])} placeholder="Max Price" />
+                   value={priceRange[1]} onChange={e => setPriceRange([priceRange[0], parseInt(e.target.value) || dynamicMaxPrice])} placeholder="Max Price" />
             </div>
           </div>
           <button 
@@ -134,12 +170,14 @@ export default function Browse() {
                   <div className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold tracking-wider uppercase">
                     {listing.property_type}
                   </div>
-                  <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold tracking-wider uppercase">
-                    {listing.furnishing}
-                  </div>
+                  {listing.property_type !== 'plot' && listing.property_type !== 'land' && (
+                    <div className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold tracking-wider uppercase">
+                      {listing.furnishing}
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 leading-tight mb-2 group-hover:text-indigo-600 transition-colors">
-                  {listing.bedroom} BHK in {listing.apartment_name || 'Independent'}
+                  {listing.bedroom > 0 ? `${listing.bedroom} BHK ${listing.property_type}` : listing.property_type.charAt(0).toUpperCase() + listing.property_type.slice(1)} in {listing.apartment_name || 'Independent'}
                 </h3>
                 <p className="text-sm text-slate-500 capitalize flex items-center">
                   <span className="w-2 h-2 rounded-full bg-slate-300 mr-2"></span>
