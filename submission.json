@@ -4,12 +4,12 @@
     "name": "Krishna Sharma",
     "email": "krishna.20234089@mnnit.ac.in",
     "repo_url": "https://github.com/krishnaa-sharmaa-905/ivy_home_assignment",
-    "demo_url": "https://krishna-ivy.vercel.app"
+    "demo_url": "https://ivy-home-assignment-seven.vercel.app"
   },
   "answers": {
-    "total_listing_records": 4650,
-    "unique_properties": 4643,
-    "active_listings": 3658,
+    "total_listing_records": 5100,
+    "unique_properties": 5091,
+    "active_listings": 4017,
     "corrupt_listing_ids": [
       "100-5000050",
       "100-5000339",
@@ -20,6 +20,7 @@
       "100-5003914",
       "100-5004028",
       "DWE-5000518",
+      "DWE-5001781",
       "DWE-5001929",
       "DWE-5001932",
       "DWE-5002147",
@@ -42,23 +43,26 @@
       "SQU-5001700",
       "SQU-5001891",
       "SQU-5001967",
+      "SQU-5002609",
       "SQU-5002700",
       "SQU-5003006",
+      "SQU-5003244",
       "SQU-5003458",
       "SQU-5003909",
       "SQU-5003928",
       "ZER-5001536",
       "ZER-5002788",
+      "ZER-5003369",
       "ZER-5003818",
       "ZER-5004007"
     ],
-    "total_monthly_rent": 7184500,
-    "avg_price_per_sqft_2bhk": 31933.94,
+    "total_monthly_rent": 7523000,
+    "avg_price_per_sqft_2bhk": 32010.95,
     "costliest_project": {
       "project_id": "P50016",
       "price_max_inr": 124400000
     },
-    "listings_last_7_days": 151,
+    "listings_last_7_days": 167,
     "fake_listing_ids": [
       "100-5000232",
       "100-5000574",
@@ -68,10 +72,13 @@
       "100-5001870",
       "100-5002054",
       "100-5002484",
+      "100-5002522",
       "100-5002955",
+      "100-5003168",
       "100-5003507",
       "100-5003534",
       "100-5003990",
+      "100-5004079",
       "100-5004529",
       "100-5004851",
       "DWE-5000035",
@@ -82,7 +89,9 @@
       "DWE-5000615",
       "DWE-5001665",
       "DWE-5001712",
+      "DWE-5001727",
       "DWE-5001771",
+      "DWE-5002820",
       "DWE-5003081",
       "DWE-5003420",
       "DWE-5003585",
@@ -91,14 +100,17 @@
       "DWE-5004707",
       "MAG-5001138",
       "MAG-5001155",
+      "MAG-5001415",
       "MAG-5002165",
       "MAG-5002186",
       "MAG-5002270",
       "MAG-5002719",
+      "MAG-5002746",
       "MAG-5003492",
       "MAG-5003659",
       "MAG-5004391",
       "MAG-5004771",
+      "SQU-5000651",
       "SQU-5000733",
       "SQU-5000917",
       "SQU-5001632",
@@ -121,7 +133,7 @@
       "ZER-5004721",
       "ZER-5004829"
     ],
-    "projects_with_wrong_listing_count": 418
+    "projects_with_wrong_listing_count": 446
   },
   "findings": [
     {
@@ -281,13 +293,31 @@
       "endpoint": "/v1/projects",
       "category": "consistency",
       "documented": "total_listings always agrees with GET /v1/listings?project_id=...",
-      "actual": "418 projects have a total_listings count that disagrees with actual listings",
+      "actual": "446 projects have a total_listings count that disagrees with actual listings",
       "how_found": "Comparing aggregated listings by project_id against projects data",
       "impact": "Cannot trust total_listings field from projects",
       "evidence": [
         "P50001",
         "P50002"
       ]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "sorting",
+      "documented": "order parameter accepts 'asc' (default) or 'desc'",
+      "actual": "The order parameter is validated by server (returns 422 if invalid) but quietly ignored during sorting; results always return in ascending order",
+      "how_found": "Tested sort_by=price with order=desc vs order=asc; both return identical ascending price results",
+      "impact": "Descending sorts cannot be done via API parameter and must be sorted client-side",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "pagination",
+      "documented": "total is the exact number of records matching your filters",
+      "actual": "total field reports 4646, but paginating past offset 4646 continues returning records up to 5100 total retrievable listings",
+      "how_found": "Paginating in chunks past offset 4646 until results array returned empty",
+      "impact": "Clients that terminate pagination when offset reaches total miss 454 listings",
+      "evidence": []
     }
   ]
 }

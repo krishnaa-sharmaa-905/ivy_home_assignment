@@ -1,6 +1,6 @@
-require('dotenv').config();
-const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+const fs = require('fs');
 
 const dataDir = path.join(__dirname, '..', 'data');
 let listings = JSON.parse(fs.readFileSync(path.join(dataDir, 'listings.json'), 'utf8'));

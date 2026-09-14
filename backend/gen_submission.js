@@ -1,6 +1,6 @@
-require('dotenv').config();
-const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+const fs = require('fs');
 
 const answers = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'answers.json'), 'utf8'));
 
@@ -10,7 +10,7 @@ const template = {
     "name": "Krishna Sharma",
     "email": "krishna.20234089@mnnit.ac.in", 
     "repo_url": "https://github.com/krishnaa-sharmaa-905/ivy_home_assignment",
-    "demo_url": "https://krishna-ivy.vercel.app"
+    "demo_url": "https://ivy-home-assignment-seven.vercel.app"
   },
   "answers": answers,
   "findings": [
@@ -153,10 +153,28 @@ const template = {
       "endpoint": "/v1/projects",
       "category": "consistency",
       "documented": "total_listings always agrees with GET /v1/listings?project_id=...",
-      "actual": "418 projects have a total_listings count that disagrees with actual listings",
+      "actual": "446 projects have a total_listings count that disagrees with actual listings",
       "how_found": "Comparing aggregated listings by project_id against projects data",
       "impact": "Cannot trust total_listings field from projects",
       "evidence": ["P50001", "P50002"]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "sorting",
+      "documented": "order parameter accepts 'asc' (default) or 'desc'",
+      "actual": "The order parameter is validated by server (returns 422 if invalid) but quietly ignored during sorting; results always return in ascending order",
+      "how_found": "Tested sort_by=price with order=desc vs order=asc; both return identical ascending price results",
+      "impact": "Descending sorts cannot be done via API parameter and must be sorted client-side",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "pagination",
+      "documented": "total is the exact number of records matching your filters",
+      "actual": "total field reports 4646, but paginating past offset 4646 continues returning records up to 5100 total retrievable listings",
+      "how_found": "Paginating in chunks past offset 4646 until results array returned empty",
+      "impact": "Clients that terminate pagination when offset reaches total miss 454 listings",
+      "evidence": []
     }
   ]
 };
