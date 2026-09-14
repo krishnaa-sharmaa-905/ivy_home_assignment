@@ -54,21 +54,9 @@ const localRentals = rentals.filter(r => r.locality.toLowerCase() === assignedLo
 const total_monthly_rent = localRentals.reduce((sum, r) => sum + r.price, 0);
 
 // ── 9. fake_listing_ids
-const brokerPhones = {};
-for (const l of listings) {
-  if (l.posted_by_name && l.posted_by_contact) {
-    if (!brokerPhones[l.posted_by_name]) brokerPhones[l.posted_by_name] = new Set();
-    brokerPhones[l.posted_by_name].add(l.posted_by_contact);
-  }
-}
-
-const fake = listings.filter(l => {
-  if (/visit only|below market|booking amount/i.test(l.description)) return true;
-  if (l.posted_by_name && brokerPhones[l.posted_by_name] && brokerPhones[l.posted_by_name].size > 1) {
-    return true; // Multiple phones for same broker name
-  }
-  return false;
-});
+const fake = listings.filter(l =>
+  /visit only|below market|booking amount/i.test(l.description)
+);
 const fake_listing_ids = fake.map(l => l.listing_id).sort();
 
 // ── 6. avg_price_per_sqft_2bhk

@@ -51,19 +51,7 @@ function computeStats(rawListings: any[], rawRentals: any[], rawProjects: any[])
 
   const corruptIds = listings.filter(isCorrupt).map((l: any) => l.listing_id);
   
-  const brokerPhones: Record<string, Set<string>> = {};
-  for (const l of listings) {
-    if (l.posted_by_name && l.posted_by_contact) {
-      if (!brokerPhones[l.posted_by_name]) brokerPhones[l.posted_by_name] = new Set();
-      brokerPhones[l.posted_by_name].add(l.posted_by_contact);
-    }
-  }
-
-  const fakeIds = listings.filter((l: any) => {
-    if (isFake(l)) return true;
-    if (l.posted_by_name && brokerPhones[l.posted_by_name] && brokerPhones[l.posted_by_name].size > 1) return true;
-    return false;
-  }).map((l: any) => l.listing_id);
+  const fakeIds = listings.filter(isFake).map((l: any) => l.listing_id);
 
   const excludeSet = new Set([...corruptIds, ...fakeIds]);
 
