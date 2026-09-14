@@ -1,18 +1,128 @@
-require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
-
-const answers = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'answers.json'), 'utf8'));
-
-const template = {
-  "api_key": process.env.API_KEY,
+{
+  "api_key": "IVY26-FCD509DB52CF",
   "candidate": {
     "name": "Krishna Sharma",
-    "email": "krishna.20234089@mnnit.ac.in", 
+    "email": "krishna.20234089@mnnit.ac.in",
     "repo_url": "https://github.com/krishnaa-sharmaa-905/ivy_home_assignment",
     "demo_url": "https://krishna-ivy.vercel.app"
   },
-  "answers": answers,
+  "answers": {
+    "total_listing_records": 4650,
+    "unique_properties": 4643,
+    "active_listings": 3658,
+    "corrupt_listing_ids": [
+      "100-5000050",
+      "100-5000339",
+      "100-5001382",
+      "100-5001980",
+      "100-5002758",
+      "100-5003364",
+      "100-5003914",
+      "100-5004028",
+      "DWE-5000518",
+      "DWE-5001929",
+      "DWE-5001932",
+      "DWE-5002147",
+      "DWE-5002309",
+      "DWE-5002623",
+      "DWE-5003926",
+      "DWE-5003960",
+      "MAG-5000193",
+      "MAG-5000752",
+      "MAG-5000775",
+      "MAG-5001549",
+      "MAG-5001852",
+      "MAG-5001874",
+      "MAG-5002204",
+      "MAG-5002515",
+      "MAG-5002818",
+      "MAG-5003706",
+      "SQU-5000538",
+      "SQU-5001264",
+      "SQU-5001700",
+      "SQU-5001891",
+      "SQU-5001967",
+      "SQU-5002700",
+      "SQU-5003006",
+      "SQU-5003458",
+      "SQU-5003909",
+      "SQU-5003928",
+      "ZER-5001536",
+      "ZER-5002788",
+      "ZER-5003818",
+      "ZER-5004007"
+    ],
+    "total_monthly_rent": 7184500,
+    "avg_price_per_sqft_2bhk": 31933.94,
+    "costliest_project": {
+      "project_id": "P50016",
+      "price_max_inr": 124400000
+    },
+    "listings_last_7_days": 151,
+    "fake_listing_ids": [
+      "100-5000232",
+      "100-5000574",
+      "100-5000781",
+      "100-5001123",
+      "100-5001380",
+      "100-5001870",
+      "100-5002054",
+      "100-5002484",
+      "100-5002955",
+      "100-5003507",
+      "100-5003534",
+      "100-5003990",
+      "100-5004529",
+      "100-5004851",
+      "DWE-5000035",
+      "DWE-5000164",
+      "DWE-5000190",
+      "DWE-5000344",
+      "DWE-5000363",
+      "DWE-5000615",
+      "DWE-5001665",
+      "DWE-5001712",
+      "DWE-5001771",
+      "DWE-5003081",
+      "DWE-5003420",
+      "DWE-5003585",
+      "DWE-5004376",
+      "DWE-5004469",
+      "DWE-5004707",
+      "MAG-5001138",
+      "MAG-5001155",
+      "MAG-5002165",
+      "MAG-5002186",
+      "MAG-5002270",
+      "MAG-5002719",
+      "MAG-5003492",
+      "MAG-5003659",
+      "MAG-5004391",
+      "MAG-5004771",
+      "SQU-5000733",
+      "SQU-5000917",
+      "SQU-5001632",
+      "SQU-5001865",
+      "SQU-5001871",
+      "SQU-5001999",
+      "SQU-5002541",
+      "SQU-5004611",
+      "SQU-5004617",
+      "ZER-5000326",
+      "ZER-5000550",
+      "ZER-5000679",
+      "ZER-5001859",
+      "ZER-5001957",
+      "ZER-5002128",
+      "ZER-5003687",
+      "ZER-5004066",
+      "ZER-5004302",
+      "ZER-5004459",
+      "ZER-5004721",
+      "ZER-5004829"
+    ],
+    "projects_with_wrong_listing_count": 418
+  },
   "findings": [
     {
       "endpoint": "*",
@@ -111,7 +221,10 @@ const template = {
       "actual": "They are returned in crores",
       "how_found": "Noticed 4.03 as max price instead of millions",
       "impact": "Converted to integer rupees during data analysis",
-      "evidence": ["P50001", "P50016"]
+      "evidence": [
+        "P50001",
+        "P50016"
+      ]
     },
     {
       "endpoint": "/v1/listings",
@@ -120,7 +233,11 @@ const template = {
       "actual": "magichomes listings report areas in square meters",
       "how_found": "Noticed 82 sqft for 2BHK and extreme price/sqft ratios (>100k)",
       "impact": "Converted sqm to sqft for magichomes where price/area ratio is high",
-      "evidence": ["MAG-5002204", "MAG-5001874", "MAG-5000775"]
+      "evidence": [
+        "MAG-5002204",
+        "MAG-5001874",
+        "MAG-5000775"
+      ]
     },
     {
       "endpoint": "/v1/listings",
@@ -129,7 +246,10 @@ const template = {
       "actual": "Endpoint returns listings with is_live: false",
       "how_found": "Saw is_live parameter in listing payload",
       "impact": "Client must manually filter active listings",
-      "evidence": ["SQU-5001676", "100-5003165"]
+      "evidence": [
+        "SQU-5001676",
+        "100-5003165"
+      ]
     },
     {
       "endpoint": "/v1/listings",
@@ -138,7 +258,12 @@ const template = {
       "actual": "Corrupt listings exist (negative price, floor > total_floors, lat/long outside Mumbai)",
       "how_found": "Data filtering scripts",
       "impact": "Excluded corrupt properties from analytics",
-      "evidence": ["100-5003914", "DWE-5002623", "MAG-5002818", "DWE-5003960"]
+      "evidence": [
+        "100-5003914",
+        "DWE-5002623",
+        "MAG-5002818",
+        "DWE-5003960"
+      ]
     },
     {
       "endpoint": "/v1/listings",
@@ -147,7 +272,10 @@ const template = {
       "actual": "Fake listings asking for booking amount upfront or 'Below market price, this week only'",
       "how_found": "Searching descriptions for suspicious patterns",
       "impact": "Excluded fake properties from analytics",
-      "evidence": ["100-5000232", "100-5003534"]
+      "evidence": [
+        "100-5000232",
+        "100-5003534"
+      ]
     },
     {
       "endpoint": "/v1/projects",
@@ -156,10 +284,10 @@ const template = {
       "actual": "418 projects have a total_listings count that disagrees with actual listings",
       "how_found": "Comparing aggregated listings by project_id against projects data",
       "impact": "Cannot trust total_listings field from projects",
-      "evidence": ["P50001", "P50002"]
+      "evidence": [
+        "P50001",
+        "P50002"
+      ]
     }
   ]
-};
-
-fs.writeFileSync(path.join(__dirname, '..', 'submission.json'), JSON.stringify(template, null, 2));
-console.log('Done writing submission.json');
+}
